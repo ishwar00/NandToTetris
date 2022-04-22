@@ -39,6 +39,78 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
     
+    Mux(a = true, b = instruction[5], sel = instruction[15], out = load-A);
+    Not(in = instruction[15], out = not-opcode);
+    Mux16(a = output-ALU, b = instruction, sel = not-opcode, out = into-A-register);
+    ARegister(in = into-A-register, load = load-A,  out = out-A-register, out[0..14] = addressM);
+    Mux16(a = out-A-register, b = inM, sel = instruction[12], out = A-or-M);
+
+    Mux(a = false, b = instruction[4], sel = instruction[15], out = load-D);
+
+    DRegister(in = output-ALU, load = load-D, out = out-D-register);
+    ALU(
+        x = out-D-register, 
+        y = A-or-M, 
+        zx = instruction[11], 
+        nx = instruction[10], 
+        zy = instruction[9], 
+        ny = instruction[8], 
+        f = instruction[7], 
+        no = instruction[6], 
+        out = output-ALU, 
+        out = outM,
+        zr = isZero, 
+        ng = lessThanZero
+    );
+
+    And(a = instruction[15], b = instruction[3], out = writeM);
+    
+    // Mux(a = false, b = true, sel = instruction[3], out = writeM);
+    
+    Not(in = isZero, out = notZero);
+    Not(in = lessThanZero, out = nonNegative);
+    
+    DMux8Way(in = true, sel = instruction[0..2], 
+        a = select0, 
+        b = select1, 
+        c = select2, 
+        d = select3, 
+        e = select4, 
+        f = select5, 
+        g = select6, 
+        h = select7
+    );
+
+    Mux(a = false, b = false,  sel = select0, out = out0); // yeah, it's not good
+
+    And(a = notZero, b = nonNegative, out = in1);
+    Mux(a = false, b = in1, sel = select1, out = out1);
+
+    Mux(a = false, b = isZero, sel = select2, out = out2);
+
+    Or(a = isZero, b = nonNegative, out = in3);
+    Mux(a = false, b = in3, sel = select3, out = out3);
+
+    Mux(a = false, b = lessThanZero, sel = select4, out = out4);
+
+    Mux(a = false, b = notZero, sel = select5, out = out5);
+
+    Or(a = lessThanZero, b = isZero, out = in6);
+    Mux(a = false, b = in6, sel = select6 , out = out6);
+
+    Mux(a = false, b = true, sel = select7, out = out7);
+
+    Or(a = out0, b = out1, out = O0);
+    Or(a = O0, b = out2, out = O1);
+    Or(a = O1, b = out3, out = O2);
+    Or(a = O2, b = out4, out = O3);
+    Or(a = O3, b = out5, out = O4);
+    Or(a = O4, b = out6, out = O5);
+    Or(a = O5, b = out7, out = O6);
+
+    DMux(in = true, sel = O6, a = bufferIncrement, b = bufferLoad-pc);
+    Mux(a = true , b = bufferIncrement, sel = instruction[15], out = increment );
+    Mux(a = false, b = bufferLoad-pc, sel = instruction[15], out = load-pc); 
+    PC(in = out-A-register, load = load-pc, inc = increment , reset = reset, out[0..14] = pc);
 }
