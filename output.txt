@@ -14,3 +14,25 @@
     Not(in = in[13], out = out[13]);
     Not(in = in[14], out = out[14]);
     Not(in = in[15], out = out[15]);
+
+
+      Boolean Logic
+  Boolean Arithmetic
+  Memory
+  Machine Language
+  Computer Architecture
+  Assembler
+
+
+
+II      SOFTWARE
+7      Virtual Machine I: Processing
+8      Virtual Machine II: Control
+9      High-Level Language
+10    Compiler I: Syntax Analysis
+11    Compiler II: Code Generation
+12    Operating System
+13    More Fun to Go
+
+
+
