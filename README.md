@@ -25,7 +25,7 @@ program that comes to your mind.
 
 ## Why i am doing it?
 
-Driving force is *How things work*. Computers were mystery for me, wondered how they work. Compilers are not obvious things to come across. I have heard things like, *computers understand zeros and ones*, but **how exactly?**. Too many mysteries to bear and work, on a machine i don't understand, and have fun 😄.
+Curiosity to know how things work, and to have fun. Computers, compilers and OS are not obvious things to come across. Things like, *computers understand zeros and ones*, but **how exactly?**
 
 ## How i am doing it?
 They are two ways to go about,
