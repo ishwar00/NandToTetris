@@ -25,7 +25,7 @@ program that comes to your mind.
 
 ## Why i am doing it?
 
-Curiosity to know how things work, and to have fun. Computers, compilers and OS are not obvious things to come across. Things like, *computers understand zeros and ones*, but **how exactly?**
+Curiosity to know how things work, and to have fun.
 
 ## How i am doing it?
 They are two ways to go about,
@@ -53,7 +53,7 @@ Namespace Tree of the project at depth level 3.
     |   |   +---04 Machine Language
     |   |   +---05 Computer Architecture
     |   |   +---06 Assembler
-    |   |   +---07
+    |   |   +---07 Virtual Machine 1 (processing)
     |   |   +---08
     |   |   +---09
     |   |   +---10
@@ -88,8 +88,8 @@ machine language
 
 #### SOFTWARE PART
 
-🚧 Virtual Machine I: Processing\
-❌ Virtual Machine II: Control\
+✔️  Virtual Machine I: Processing\
+🚧 Virtual Machine II: Control\
 ❌ High-Level Language\
 ❌ Compiler I: Syntax Analysis\
 ❌ Compiler II: Code generation\
