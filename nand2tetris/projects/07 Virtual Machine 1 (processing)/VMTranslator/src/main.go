@@ -19,6 +19,7 @@ expected way to run VMTranslator is: ./VMTranslator <path to vm file>`,
 	var codeWriter CodeWriter
 	parser.Initializer(vmFilPath)
 	codeWriter.Initializer(vmFilPath)
+	defer codeWriter.closer()
 	for parser.HasMoreLines() {
 		parser.Advance()
 		codeWriter.Write([]string{"// " + parser.GetInstrInfo().Instruction})
