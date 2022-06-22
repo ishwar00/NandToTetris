@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 type CodeWriter struct {
@@ -30,22 +32,6 @@ func (cr *CodeWriter) Initializer(filePath string) {
 	}
 }
 
-// creates file with the same name and directory as filePath with file extension asm,
-// eg: if filePath is example/path/Prog.vm, then it creates a file example/path/Prog.asm
-// it will overwrite if already such file exists.
-// returns function which must be called to close the created file.
-func CreateOutputFile(filePath string) (*os.File, func()) {
-	directory, fileName := filepath.Split(filePath)
-	hackFilePath := filepath.Join(directory, strings.Split(fileName, ".")[0]+".asm")
-	hackFile, err := os.Create(hackFilePath)
-	if err != nil {
-		panic(err)
-	}
-	return hackFile, func() {
-		hackFile.Close()
-	}
-}
-
 func (cr *CodeWriter) WritePushPop(command int, segment string, index int) error {
 	var code []string
 	pointer := []string{"THIS", "THAT"}
@@ -60,9 +46,9 @@ func (cr *CodeWriter) WritePushPop(command int, segment string, index int) error
 				"D=M",
 				"@SP",
 				"A=M",
-				"M=D",
+				"M=D", // *SP = pointer[index]
 				"@SP",
-				"M=M+1",
+				"M=M+1", // SP++
 			}
 
 		case "argument", "local", "this", "that":
@@ -70,13 +56,13 @@ func (cr *CodeWriter) WritePushPop(command int, segment string, index int) error
 				fmt.Sprintf("@%v", cr.segmentMap[segment]),
 				"D=M",
 				fmt.Sprintf("@%v", index),
-				"A=D+A",
-				"D=M",
+				"A=D+A", // A = segment + index
+				"D=M",   // D = segment[index]
 				"@SP",
 				"A=M",
-				"M=D",
+				"M=D", // *SP = segment[index]
 				"@SP",
-				"M=M+1",
+				"M=M+1", // SP++
 			}
 
 		case "temp":
@@ -96,26 +82,26 @@ func (cr *CodeWriter) WritePushPop(command int, segment string, index int) error
 		case "constant":
 			code = []string{
 				fmt.Sprintf("@%v", index),
-				"D=A",
+				"D=A", // D = index
 				"@SP",
 				"A=M",
-				"M=D",
+				"M=D", // *SP = index
 				"@SP",
-				"M=M+1",
+				"M=M+1", // SP++
 			}
 
 		case "static":
 			code = []string{
-				fmt.Sprintf("@%v.%v", fileName, index), // Foo.3
+				fmt.Sprintf("@%v.%v", fileName, index), // @Foo.3
 				"D=M",
 				"@SP",
 				"A=M",
-				"M=D",
+				"M=D", // *SP = static[i]
 				"@SP",
 				"M=M+1",
 			}
 		default:
-			return fmt.Errorf("unknown segment %v encountered ", segment)
+			return fmt.Errorf("unknown segment %v encountered ", color.RedString(segment))
 		}
 	case C_POP:
 		switch segment {
@@ -126,7 +112,7 @@ func (cr *CodeWriter) WritePushPop(command int, segment string, index int) error
 				"A=M",
 				"D=M",
 				fmt.Sprintf("@%v", pointer[index]),
-				"M=D",
+				"M=D", // pointer[index] = *SP
 			}
 		case "argument", "this", "that", "local":
 			code = []string{
@@ -172,13 +158,11 @@ func (cr *CodeWriter) WritePushPop(command int, segment string, index int) error
 			}
 		default:
 			// this block is not supposed to be executed ever, if it did, it's an unknown segment error
-			return fmt.Errorf("unknown segment %v encountered ", segment)
-
+			return fmt.Errorf("unknown segment %v encountered ", color.RedString(segment))
 		}
 	default:
 		// this block is not supposed to be executed ever, if it did, it's an unknown segment error
-		return fmt.Errorf("unknown segment %v encountered ", segment)
-
+		return fmt.Errorf("unknown segment %v encountered ", color.RedString(segment))
 	}
 	return cr.Write(code)
 }
@@ -193,7 +177,7 @@ func (cr CodeWriter) Write(code []string) error {
 
 		_, err := cr.outputFile.Write([]byte(asm + newLine))
 		if err != nil {
-			return err
+			return fmt.Errorf(color.RedString(err.Error()))
 		}
 	}
 	return nil
