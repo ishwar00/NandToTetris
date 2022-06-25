@@ -167,7 +167,7 @@ func (cr *CodeWriter) WritePushPop(command int, segment string, index int) error
 	return cr.Write(code)
 }
 
-func (cr CodeWriter) Write(code []string) error {
+func (cr *CodeWriter) Write(code []string) error {
 	tab := "\t"
 	newLine := "\n"
 	for _, asm := range code {
@@ -186,101 +186,63 @@ func (cr CodeWriter) Write(code []string) error {
 func (cr *CodeWriter) WriteArithmetic(command string) error {
 	var code []string
 	switch command {
-	case "add":
-		// pops two top stack values, adds them, pushes result back to stack
-		code = []string{
-			"@SP",
-			"M=M-1", // SP = SP - 1
-			"A=M",
-			"D=M", // D = *SP
-			"@R13",
-			"M=D", // R13 = *SP = D, first stack top value
-			"@SP",
-			"M=M-1", // SP = SP - 1
-			"A=M",
-			"D=M", // D = *SP, second stack top value
-			"@R13",
-			"A=M",   // A as data register
-			"D=D+A", // adding two top stack values
-			"@SP",
-			"A=M",
-			"M=D", // *SP = result of addition
-			"@SP",
-			"M=M+1",
+	case "add", "sub", "and", "or":
+		// pops two top stack values, {add, sub, and, or} them, pushes result back to stack
+		code = cr.codeForAddSubAndOr(command)
+	case "neg", "not":
+		// pops top stack value, does arithmetic or logical negation on it, pushes result back onto the stack
+		mp := map[string]string{
+			"neg": "-",
+			"not": "!",
 		}
-	case "sub":
-		// pops top two stack values, say y and x, does x - y and pushes result back onto stack
 		code = []string{
 			"@SP",
-			"M=M-1", // SP = SP - 1
 			"A=M",
-			"D=M", // D = *SP
-			"@R13",
-			"M=D", // R13 = *SP = D, first stack top value
-			"@SP",
-			"M=M-1", // SP = SP - 1
-			"A=M",
-			"D=M", // D = *SP, second stack top value
-			"@R13",
-			"A=M",   // A as data register
-			"D=D-A", // adding two top stack values
-			"@SP",
-			"A=M",
-			"M=D", // *SP = result of addition
-			"@SP",
-			"M=M+1",
-		}
-	case "neg":
-		// pops top stack value, does arithmetic negation on it, pushes result back onto the stack
-		code = []string{
-			"@SP",
-			"M=M-1", // SP = SP - 1
-			"A=M",
-			"M=-M", // *SP = -(*SP)
-			"@SP",
-			"M=M+1", // SP++
+			"A=A-1",
+			fmt.Sprintf("M=%vM", mp[command]), // *SP = -(*SP) or !(*SP)
 		}
 	case "eq", "gt", "lt":
 		code = cr.codeForGtLtEq(command)
-	case "and", "or":
-		code = cr.codeForAndOr(command)
-	case "not":
-		code = []string{
-			"@SP",
-			"M=M-1", // SP = SP - 1
-			"A=M",
-			"M=!M", // *SP = !(*SP)
-			"@SP",
-			"M=M+1", // SP++
-		}
 	}
 	return cr.Write(code)
 }
 
-func (cr CodeWriter) codeForAndOr(command string) []string {
+func (cr CodeWriter) codeForAddSubAndOr(command string) []string {
 	mp := map[string]string{
-		"and": "&",
+		"add": "+",
+		"sub": "-",
 		"or":  "|",
+		"and": "&",
 	}
 
+	// | b | a |  |   <- stack
+	// 			SP    <- stack pointer
+	//  b op a
 	code := []string{
 		"@SP",
-		"M=M-1", // SP = SP - 1
+		"M=M-1",
 		"A=M",
-		"D=M",
-		"@R13",
-		"M=D", // R13 = *SP
-		"@SP",
-		"M=M-1", // SP = Sp - 1
-		"A=M",
-		"D=M",
-		"@R13",
-		fmt.Sprintf("D=D%vM", mp[command]), // D = x command y
-		"@SP",
-		"A=M",
-		"M=D",
-		"@SP",
-		"M=M+1",
+		"D=M", // D = a
+		"A=A-1",
+		// M = b
+	}
+
+	if command == "sub" {
+		code = append(code, "M=M-D") // M = b - a
+	} else {
+		code = append(code, cr.swapDM()...)                     // injecting swaping code
+		code = append(code, fmt.Sprintf("M=D%vM", mp[command])) // M = b op a
+	}
+	return code
+}
+
+// this will swap values of registers D and M
+// say D has a, M has b
+func (cr CodeWriter) swapDM() []string {
+	code := []string{
+		"M=D+M", // M = a + b
+		"D=M-D", // D = a + b - a, => D = b
+		"M=M-D", // M = a + b - b, => M = a
 	}
 	return code
 }
@@ -291,33 +253,28 @@ func (cr *CodeWriter) codeForGtLtEq(command string) []string {
 		"gt": "JGT",
 		"lt": "JLT",
 	}
+	// | b | a |  |   <- stack
+	// 			SP    <- stack pointer
+	//  b op a
 	code := []string{
 		"@SP",
 		"M=M-1", // SP = SP - 1
 		"A=M",
-		"D=M", // D = *SP, first top stack value, call it y
-		"@R13",
-		"M=D", // R13 = *SP = D, R13 = y
-		"@SP",
-		"M=M-1", // SP = SP - 1
-		"A=M",
-		"D=M", // D = *SP, call it x
-		"@R13",
-		"D=D-M", //  x - y
-		fmt.Sprintf("@TRUE%v", cr.labelId),
-		fmt.Sprintf("D;%v", mp[command]), // jump if (x - y commnad 0), command could be '<', '>', '=='
-		"@0",                             // false result
-		"D=A",
-		fmt.Sprintf("@PUSH%v", cr.labelId),
+		"D=M", // D = *SP, D = a
+		"A=A-1",
+		"D=M-D", //  b - a
+		fmt.Sprintf("@TRUE_%v", cr.labelId),
+		fmt.Sprintf("D;%v", mp[command]), // jump if (b - a op 0), op belongs to { '<', '>', '==' }
+		"D=0",                            // false
+		fmt.Sprintf("@DONE_%v", cr.labelId),
 		"0;JMP",
-		fmt.Sprintf("(TRUE%v)", cr.labelId),
-		"D=-1",                              // true result
-		fmt.Sprintf("(PUSH%v)", cr.labelId), // pushed result onto stack
+		fmt.Sprintf("(TRUE_%v)", cr.labelId),
+		"D=-1", // true
+		fmt.Sprintf("(DONE_%v)", cr.labelId),
 		"@SP",
 		"A=M",
-		"M=D", // *SP = (x command y)
-		"@SP",
-		"M=M+1", // SP++
+		"A=A-1",
+		"M=D",
 	}
 	cr.labelId++
 	return code

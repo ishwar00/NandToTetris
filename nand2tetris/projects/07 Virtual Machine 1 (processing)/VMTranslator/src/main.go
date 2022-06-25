@@ -1,17 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/fatih/color"
 )
 
+const doc = `expected way to run VMTranslator is: ./VMTranslator <path to .vm file>`
+
 func main() {
 	if len(os.Args) != 2 {
-		panic(fmt.Errorf(color.RedString(`
-expected way to run VMTranslator is: ./VMTranslator <path to .vm file>`,
-		)))
+		panic(color.RedString(doc))
 	}
 
 	if err := virtualMachine(os.Args[1]); err != nil {

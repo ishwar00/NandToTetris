@@ -19,7 +19,10 @@ func Assembler(filePath string) error {
 	memoryAllocator := 16
 	binaryInstructions := []string{}
 
-	st.DoPass1()
+	err := st.DoPass1()
+	if err != nil {
+		return err
+	}
 
 	for parser.HasMoreLines() {
 		parser.Advance()

@@ -44,7 +44,7 @@ func (p *Parser) Initialize(fileName string) {
 		if at := strings.Index(line, "//"); at != -1 {
 			line = line[:at]
 		}
-		line = strings.Trim(line, " ")
+		line = strings.TrimSpace(line)
 		if len(line) > 0 {
 			instrInfo := InstructionInfo{
 				Instr:  line,

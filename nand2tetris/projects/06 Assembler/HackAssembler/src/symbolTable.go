@@ -1,5 +1,11 @@
 package main
 
+import (
+	"fmt"
+
+	"github.com/fatih/color"
+)
+
 type SymbolTable struct {
 	ST       map[string]int
 	fileName string
@@ -49,7 +55,7 @@ func (st SymbolTable) GetAddress(symbol string) int {
 	return st.ST[symbol]
 }
 
-func (st *SymbolTable) DoPass1() {
+func (st *SymbolTable) DoPass1() error {
 	var parser Parser
 	parser.Initialize(st.fileName)
 
@@ -57,9 +63,14 @@ func (st *SymbolTable) DoPass1() {
 	for parser.HasMoreLines() {
 		parser.Advance()
 		if parser.InstructionType() == L_INSTRUCTION {
+			if st.Contains(parser.Symbol()) {
+				errMsg := fmt.Errorf(color.RedString("duplicate label %v found, labels must be unique"), parser.Symbol())
+				return PrepError(parser.GetInstrInfo(), errMsg)
+			}
 			st.AddEntry(parser.Symbol(), address+1)
 			continue
 		}
 		address++
 	}
+	return nil
 }

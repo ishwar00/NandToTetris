@@ -19,28 +19,20 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D-M
-	@TRUE0
+	A=A-1
+	D=M-D
+	@TRUE_0
 	D;JEQ
-	@0
-	D=A
-	@PUSH0
+	D=0
+	@DONE_0
 	0;JMP
-(TRUE0)
+(TRUE_0)
 	D=-1
-(PUSH0)
+(DONE_0)
 	@SP
 	A=M
+	A=A-1
 	M=D
-	@SP
-	M=M+1
 // push constant 17
 	@17
 	D=A
@@ -62,28 +54,20 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D-M
-	@TRUE1
+	A=A-1
+	D=M-D
+	@TRUE_1
 	D;JEQ
-	@0
-	D=A
-	@PUSH1
+	D=0
+	@DONE_1
 	0;JMP
-(TRUE1)
+(TRUE_1)
 	D=-1
-(PUSH1)
+(DONE_1)
 	@SP
 	A=M
+	A=A-1
 	M=D
-	@SP
-	M=M+1
 // push constant 16
 	@16
 	D=A
@@ -105,28 +89,20 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D-M
-	@TRUE2
+	A=A-1
+	D=M-D
+	@TRUE_2
 	D;JEQ
-	@0
-	D=A
-	@PUSH2
+	D=0
+	@DONE_2
 	0;JMP
-(TRUE2)
+(TRUE_2)
 	D=-1
-(PUSH2)
+(DONE_2)
 	@SP
 	A=M
+	A=A-1
 	M=D
-	@SP
-	M=M+1
 // push constant 892
 	@892
 	D=A
@@ -148,28 +124,20 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D-M
-	@TRUE3
+	A=A-1
+	D=M-D
+	@TRUE_3
 	D;JLT
-	@0
-	D=A
-	@PUSH3
+	D=0
+	@DONE_3
 	0;JMP
-(TRUE3)
+(TRUE_3)
 	D=-1
-(PUSH3)
+(DONE_3)
 	@SP
 	A=M
+	A=A-1
 	M=D
-	@SP
-	M=M+1
 // push constant 891
 	@891
 	D=A
@@ -191,28 +159,20 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D-M
-	@TRUE4
+	A=A-1
+	D=M-D
+	@TRUE_4
 	D;JLT
-	@0
-	D=A
-	@PUSH4
+	D=0
+	@DONE_4
 	0;JMP
-(TRUE4)
+(TRUE_4)
 	D=-1
-(PUSH4)
+(DONE_4)
 	@SP
 	A=M
+	A=A-1
 	M=D
-	@SP
-	M=M+1
 // push constant 891
 	@891
 	D=A
@@ -234,28 +194,20 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D-M
-	@TRUE5
+	A=A-1
+	D=M-D
+	@TRUE_5
 	D;JLT
-	@0
-	D=A
-	@PUSH5
+	D=0
+	@DONE_5
 	0;JMP
-(TRUE5)
+(TRUE_5)
 	D=-1
-(PUSH5)
+(DONE_5)
 	@SP
 	A=M
+	A=A-1
 	M=D
-	@SP
-	M=M+1
 // push constant 32767
 	@32767
 	D=A
@@ -277,28 +229,20 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D-M
-	@TRUE6
+	A=A-1
+	D=M-D
+	@TRUE_6
 	D;JGT
-	@0
-	D=A
-	@PUSH6
+	D=0
+	@DONE_6
 	0;JMP
-(TRUE6)
+(TRUE_6)
 	D=-1
-(PUSH6)
+(DONE_6)
 	@SP
 	A=M
+	A=A-1
 	M=D
-	@SP
-	M=M+1
 // push constant 32766
 	@32766
 	D=A
@@ -320,28 +264,20 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D-M
-	@TRUE7
+	A=A-1
+	D=M-D
+	@TRUE_7
 	D;JGT
-	@0
-	D=A
-	@PUSH7
+	D=0
+	@DONE_7
 	0;JMP
-(TRUE7)
+(TRUE_7)
 	D=-1
-(PUSH7)
+(DONE_7)
 	@SP
 	A=M
+	A=A-1
 	M=D
-	@SP
-	M=M+1
 // push constant 32766
 	@32766
 	D=A
@@ -363,28 +299,20 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D-M
-	@TRUE8
+	A=A-1
+	D=M-D
+	@TRUE_8
 	D;JGT
-	@0
-	D=A
-	@PUSH8
+	D=0
+	@DONE_8
 	0;JMP
-(TRUE8)
+(TRUE_8)
 	D=-1
-(PUSH8)
+(DONE_8)
 	@SP
 	A=M
+	A=A-1
 	M=D
-	@SP
-	M=M+1
 // push constant 57
 	@57
 	D=A
@@ -414,20 +342,11 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	A=M
-	D=D+A
-	@SP
-	A=M
-	M=D
-	@SP
-	M=M+1
+	A=A-1
+	M=D+M
+	D=M-D
+	M=M-D
+	M=D+M
 // push constant 112
 	@112
 	D=A
@@ -441,45 +360,23 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	A=M
-	D=D-A
-	@SP
-	A=M
-	M=D
-	@SP
-	M=M+1
+	A=A-1
+	M=M-D
 // neg
 	@SP
-	M=M-1
 	A=M
+	A=A-1
 	M=-M
-	@SP
-	M=M+1
 // and
 	@SP
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D&M
-	@SP
-	A=M
-	M=D
-	@SP
-	M=M+1
+	A=A-1
+	M=D+M
+	D=M-D
+	M=M-D
+	M=D&M
 // push constant 82
 	@82
 	D=A
@@ -493,26 +390,16 @@
 	M=M-1
 	A=M
 	D=M
-	@R13
-	M=D
-	@SP
-	M=M-1
-	A=M
-	D=M
-	@R13
-	D=D|M
-	@SP
-	A=M
-	M=D
-	@SP
-	M=M+1
+	A=A-1
+	M=D+M
+	D=M-D
+	M=M-D
+	M=D|M
 // not
 	@SP
-	M=M-1
 	A=M
+	A=A-1
 	M=!M
-	@SP
-	M=M+1
 (END)
 	@END
 	0;JMP

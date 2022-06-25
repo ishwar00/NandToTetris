@@ -29,11 +29,11 @@ func main() {
 	// 	"../../rect/RectL.asm"
 
 	if len(os.Args) == 1 {
-		err := fmt.Errorf(color.RedString("program need arguments as .asm file paths, run with flag --help"))
+		err := fmt.Errorf(color.RedString("program needs arguments as .asm file paths, run with flag --help"))
 		panic(err)
 	}
 
-	if len(os.Args) == 2 && strings.Trim(os.Args[1], " ") == "--help" {
+	if len(os.Args) == 2 && strings.TrimSpace(os.Args[1]) == "--help" {
 		fmt.Println(doc)
 		return
 	}
@@ -47,5 +47,4 @@ func main() {
 		color.Green("finished assembling...")
 		fmt.Println("")
 	}
-
 }

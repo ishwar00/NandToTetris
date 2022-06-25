@@ -5,7 +5,6 @@
 ## Table of contents
 * [General info](#general-info)
     * [What is it?](#what-is-it)
-    * [Why i am doing it?](#why-i-am-doing-it)
     * [How i am doing it?](#how-i-am-doing-it)
 * [Technologies](#technologies)
 * [Project structure](#project-structure)
@@ -22,10 +21,6 @@ quoting from book:
 program that comes to your mind. 
 [know more](https://www.nand2tetris.org/).
 
-
-## Why i am doing it?
-
-Curiosity to know how things work, and to have fun.
 
 ## How i am doing it?
 They are two ways to go about,
