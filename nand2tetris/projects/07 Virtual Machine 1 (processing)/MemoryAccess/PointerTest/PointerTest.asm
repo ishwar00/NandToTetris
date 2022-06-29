@@ -95,9 +95,6 @@
 	D=M
 	A=A-1
 	M=D+M
-	D=M-D
-	M=M-D
-	M=D+M
 // push this 2
 	@THIS
 	D=M
@@ -134,9 +131,3 @@
 	D=M
 	A=A-1
 	M=D+M
-	D=M-D
-	M=M-D
-	M=D+M
-(END)
-	@END
-	0;JMP

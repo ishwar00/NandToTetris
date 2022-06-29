@@ -181,9 +181,6 @@
 	D=M
 	A=A-1
 	M=D+M
-	D=M-D
-	M=M-D
-	M=D+M
 // push argument 1
 	@ARG
 	D=M
@@ -231,9 +228,6 @@
 	D=M
 	A=A-1
 	M=D+M
-	D=M-D
-	M=M-D
-	M=D+M
 // sub
 	@SP
 	M=M-1
@@ -259,9 +253,3 @@
 	D=M
 	A=A-1
 	M=D+M
-	D=M-D
-	M=M-D
-	M=D+M
-(END)
-	@END
-	0;JMP
