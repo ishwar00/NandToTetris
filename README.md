@@ -50,7 +50,7 @@ Namespace Tree of the project at depth level 3.
     |   |   +---06 Assembler
     |   |   +---07 Virtual Machine 1 (processing)
     |   |   +---08 Virtual Machine 2 (control)
-    |   |   +---09
+    |   |   +---09 High-Level Language
     |   |   +---10
     |   |   +---11
     |   |   +---12
@@ -85,8 +85,8 @@ machine language
 
 ✔️  Virtual Machine I: Processing\
 ✔️  Virtual Machine II: Control\
-🚧 High-Level Language\
-❌ Compiler I: Syntax Analysis\
+✔️  High-Level Language\
+🚧 Compiler I: Syntax Analysis\
 ❌ Compiler II: Code generation\
 ❌ Operating System\
 ❌ More Fun to Go
