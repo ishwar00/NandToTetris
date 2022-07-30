@@ -1,0 +1,194 @@
+class Game {
+    field Block leftBlock;
+    field Block rightBlock;
+    field Block obstacleBlock;
+    field Ball ball;
+    field boolean running;
+    field int leftScore;
+    field int rightScore;
+    field int duration;
+    field int frameRate;
+
+    constructor Game new() {
+        let leftBlock = Block.new(10, 90, 10, 50);
+        let rightBlock = Block.new(491, 90, 10, 50);
+        let obstacleBlock = Block.new(186, 125, 150, 5);
+        let ball = Ball.new(255,127, 10);
+        let running = false;
+        let rightScore = 0;
+        let leftScore = 0;
+        let duration = 7200;
+        let frameRate = 17;
+        return this;
+    }
+
+    function int abs(int a) {
+        if(a < 0){
+            return -a;
+        }
+        return a;
+    }
+
+    method void draw() {
+        do leftBlock.draw();
+        do rightBlock.draw();
+        do ball.draw();
+        return;
+    }
+
+    method void displayScore() {
+        do Output.moveCursor(1, 25);
+        do Output.printInt(leftScore);
+        do Output.moveCursor(1, 31);
+        do Output.printInt(rightScore);
+        return;
+    }
+
+
+    method void handleCollisionWithWalls() {
+        var boolean leftWall, rightWall, topWall, bottomWall;
+        var int ballX, ballY, radius, velocityX, velocityY;
+
+        let ballX = ball.getX();
+        let ballY = ball.getY();
+        let radius = ball.getRadius();
+        let velocityX = ball.getVelocityX();
+        let velocityY = ball.getVelocityY();
+
+        let leftWall = (ballX = radius) & (velocityX < 0); 
+        let rightWall = (ballX = (511 - radius)) & (velocityX > 0);
+        if(leftWall | rightWall) {
+            do ball.negateVelocityX();
+        }
+        let topWall = (ballY = radius) & (velocityY < 0);
+        let bottomWall = (ballY = (255 - radius)) & (velocityY > 0);
+        if(topWall | bottomWall) { 
+            do ball.negateVelocityY();
+        }
+        
+        if(leftWall) {
+            let rightScore = rightScore + 1;
+        }
+
+        if(rightWall) {
+            let leftScore = leftScore + 1;
+        }
+        return;
+    }
+
+    method void blockAndBallCollision(Ball ball, Block block) {
+        var int x, y, rx, ry, cx, cy
+        ,width, height, radius, distance, velocityX, velocityY
+        ,dx, dy;
+
+        let cx = ball.getX();
+        let cy = ball.getY();
+        let x = cx;
+        let y = cy;
+        let rx = block.getX();
+        let ry = block.getY();
+        let width = block.getWidth();
+        let height = block.getHeight();
+        let radius = ball.getRadius();
+        let velocityX = ball.getVelocityX();
+        let velocityY = ball.getVelocityY();
+
+        if(((rx + 1) > cx)){
+            let x = rx;
+        }
+        if (((rx + width - 1) < cx)) {
+            let x = (rx + width);
+        }
+
+        if(((ry + 1) > cy)) {
+            let y = ry;
+        }
+        if(((ry + height - 1) < cy)) {
+            let y = (ry + height);
+        }
+
+        let dx = Game.abs(cx - x);
+        let dy = Game.abs(cy - y); 
+        let dx = Math.min(2 * radius, dx);
+        let dy = Math.min(2 * radius, dy);
+        let distance = Math.sqrt((dx * dx) + (dy * dy));
+
+        if(distance < (radius + 1)) { 
+            if(dx < radius) {
+                if(((cx < rx) & (velocityX > 0)) | ((cx > (rx + width)) & (velocityX < 0))) {
+                    do ball.negateVelocityX();
+                }
+            }
+
+            if(dy < radius) { 
+                if(((cy < ry) & (velocityY > 0)) | ((cy > (ry + height)) & (velocityY < 0))) {
+                    do ball.negateVelocityY();
+                }
+            }
+        }
+        return;
+    }
+
+    method void run() {
+        var int currentDuration;
+        var int change;
+        var int nextChange;
+        let change = 1200;
+        let currentDuration = 0;
+        let nextChange = change;
+
+        while(currentDuration < duration){
+            if(running) { 
+                if(nextChange = currentDuration){
+                    do leftBlock.increaseSensitivity(1);
+                    do rightBlock.increaseSensitivity(1);
+                    do ball.increaseVelocity(1); 
+                    let nextChange = nextChange + change;
+                }
+
+                do leftBlock.erase();
+                do rightBlock.erase();
+                
+                do handleCollisionWithWalls();
+                do blockAndBallCollision(ball, leftBlock);
+                do blockAndBallCollision(ball, rightBlock);
+                do blockAndBallCollision(ball, obstacleBlock);
+               
+                do ball.move();
+                do rightBlock.move(131, 133);
+                do leftBlock.move(87, 83);
+                do displayScore();
+              
+                do leftBlock.draw();
+                do rightBlock.draw();
+                do obstacleBlock.draw();
+                let currentDuration = currentDuration + 1; 
+            } else {
+                do Output.moveCursor(10, 20);
+                do Output.printString("Press SPACE to begin");
+                if(Keyboard.keyPressed() = 32) {
+                    let running = true;
+                    do Screen.clearScreen();
+                }
+            }
+            do Sys.wait(17);
+        }
+        if(leftScore < rightScore){
+            do Screen.clearScreen();
+            do Output.moveCursor(10, 20);
+            do Output.printString("right player has won!!");
+        }
+        if(leftScore > rightScore){
+            do Screen.clearScreen();
+            do Output.moveCursor(10, 20);
+            do Output.printString("left player has won!!");
+        }
+
+        if(leftScore > rightScore){
+            do Screen.clearScreen();
+            do Output.moveCursor(10, 20);
+            do Output.printString("none of you have won!!");
+        }
+        return;
+    }
+}

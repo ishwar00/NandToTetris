@@ -1,0 +1,25 @@
+function Main.main 1
+push constant 1
+call BinaryTree.new 1
+pop local 0
+push local 0
+push constant 3
+call BinaryTree.add 2
+pop temp 0
+push local 0
+push constant 2
+call BinaryTree.add 2
+pop temp 0
+push local 0
+push constant 4
+call BinaryTree.add 2
+pop temp 0
+push local 0
+push constant 5
+call BinaryTree.add 2
+pop temp 0
+push local 0
+call BinaryTree.preorder 1
+pop temp 0
+push constant 0
+return

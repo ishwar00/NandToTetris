@@ -1,0 +1,13 @@
+class Main {
+    function void main() {
+        var BinaryTree tree;
+
+        let tree = BinaryTree.new(1);
+        do tree.add(3);
+        do tree.add(2);
+        do tree.add(4);
+        do tree.add(5);
+        do tree.preorder();
+        return;
+    }   
+}

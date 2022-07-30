@@ -1,0 +1,68 @@
+class Block {
+    field int width;
+    field int height;
+    field int x;
+    field int y;
+    field int sensitivity; // defaults to 2 pixels
+
+    constructor Block new(int Ax, int Ay, int Awidth, int Aheight) {
+        let width = Awidth;
+        let height = Aheight;
+        let x = Ax;
+        let y = Ay; 
+        let sensitivity = 2;
+        return this;
+    }
+
+    method void draw() {
+        do Screen.setColor(true);
+        do Screen.drawRectangle(x, y, x + width, y + height);
+        return;
+    }
+
+    method int getX() { return x; }
+    method int getY() { return y; }
+    method int getWidth() { return width; }
+    method int getHeight() { return height; }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void move(char upKey, char downKey) {
+        if(upKey = Keyboard.keyPressed()) {
+            do moveUp();
+        }
+
+        if(downKey = Keyboard.keyPressed()) {
+            do moveDown();
+        }
+        return;
+    }
+
+    method void moveUp() {
+        if(y - sensitivity > 0) {
+            let y = y - sensitivity;
+        }
+        return;
+    }
+
+    method void erase() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x, y, x + width, y + height);
+        return;
+    }
+        
+    method void moveDown() {
+        if(y + height + sensitivity < 254) {
+            let y = y + sensitivity;
+        }
+        return;
+    }
+
+    method void increaseSensitivity(int change) {
+        let sensitivity = sensitivity + change;
+        return;
+    }
+}

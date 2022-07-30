@@ -1,0 +1,81 @@
+class BinaryTree {
+    field int data;
+    field BinaryTree left;
+    field BinaryTree right;
+
+    constructor BinaryTree new(int d) {
+        let data = d;
+        let left = null;
+        let right = null;
+        return this;
+    }
+
+    method int getData() { return data; }
+    method int getLeft() { return left; }
+    method int getRight() { return right; }
+
+    method void setData(int d) { let data = d; return; }
+    method void setLeft(BinaryTree l) { let left = l; return;}
+    method void setRight(BinaryTree r) { let right = r; return;}
+
+    method BinaryTree add(int d) {
+        var BinaryTree onNode;
+        var BinaryTree buf;
+        let onNode = this;
+        if (onNode.getData() < d) {
+            if (onNode.getLeft() = null) {
+                do onNode.setLeft(BinaryTree.new(d));
+            } else {
+                let buf = onNode.getLeft();
+                do onNode.setLeft(buf.add(d));  
+            }
+        } else {
+            if (onNode.getRight() = null) {
+                do onNode.setRight(BinaryTree.new(d));
+            } else {
+                let buf = onNode.getRight();
+                do onNode.setRight(buf.add(d));
+            }
+        }
+        return onNode;
+    }
+
+    method void dispose() {
+        var BinaryTree onNode;
+        var BinaryTree buf;
+
+        let onNode = this;
+
+        if((onNode.getLeft() = null) & (onNode.getRight() = null)) {
+            do memory.deAlloc(this);
+        } else {
+            if (~(onNode.getLeft() = null)) {
+                let buf = onNode.getLeft();
+                do buf.dispose();
+            } 
+            if (~(onNode.getRight() = null)){
+                let buf = onNode.getRight();
+                do buf.dispose();
+            }
+        }
+        return;
+    }
+
+
+    method void preorder() {
+        var BinaryTree onNode;
+        var BinaryTree buf;
+        let onNode = this;
+        do Output.printInt(onNode.getData());
+        do Output.printChar(32);
+        let buf = onNode.getRight();
+        if (~(buf = null)){
+            do buf.preorder();
+        }
+        let buf = onNode.getLeft();
+        if(~(buf = null)) {
+            do buf.preorder();
+        }
+        return;
+    }
+}

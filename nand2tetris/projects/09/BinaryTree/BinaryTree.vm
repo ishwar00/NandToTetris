@@ -1,0 +1,210 @@
+function BinaryTree.new 0
+push constant 3
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push constant 0
+pop this 1
+push constant 0
+pop this 2
+push pointer 0
+return
+function BinaryTree.getData 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function BinaryTree.getLeft 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function BinaryTree.getRight 0
+push argument 0
+pop pointer 0
+push this 2
+return
+function BinaryTree.setData 0
+push argument 0
+pop pointer 0
+push argument 1
+pop this 0
+push constant 0
+return
+function BinaryTree.setLeft 0
+push argument 0
+pop pointer 0
+push argument 1
+pop this 1
+push constant 0
+return
+function BinaryTree.setRight 0
+push argument 0
+pop pointer 0
+push argument 1
+pop this 2
+push constant 0
+return
+function BinaryTree.add 2
+push argument 0
+pop pointer 0
+push pointer 0
+pop local 0
+push local 0
+call BinaryTree.getData 1
+push argument 1
+lt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 0
+call BinaryTree.getLeft 1
+push constant 0
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 0
+push argument 1
+call BinaryTree.new 1
+call BinaryTree.setLeft 2
+pop temp 0
+goto IF_END1
+label IF_FALSE1
+push local 0
+call BinaryTree.getLeft 1
+pop local 1
+push local 0
+push local 1
+push argument 1
+call BinaryTree.add 2
+call BinaryTree.setLeft 2
+pop temp 0
+label IF_END1
+goto IF_END0
+label IF_FALSE0
+push local 0
+call BinaryTree.getRight 1
+push constant 0
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push local 0
+push argument 1
+call BinaryTree.new 1
+call BinaryTree.setRight 2
+pop temp 0
+goto IF_END2
+label IF_FALSE2
+push local 0
+call BinaryTree.getRight 1
+pop local 1
+push local 0
+push local 1
+push argument 1
+call BinaryTree.add 2
+call BinaryTree.setRight 2
+pop temp 0
+label IF_END2
+label IF_END0
+push local 0
+return
+function BinaryTree.dispose 2
+push argument 0
+pop pointer 0
+push pointer 0
+pop local 0
+push local 0
+call BinaryTree.getLeft 1
+push constant 0
+eq
+push local 0
+call BinaryTree.getRight 1
+push constant 0
+eq
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push pointer 0
+call memory.deAlloc 1
+pop temp 0
+goto IF_END0
+label IF_FALSE0
+push local 0
+call BinaryTree.getLeft 1
+push constant 0
+eq
+not
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 0
+call BinaryTree.getLeft 1
+pop local 1
+push local 1
+call BinaryTree.dispose 1
+pop temp 0
+label IF_FALSE1
+push local 0
+call BinaryTree.getRight 1
+push constant 0
+eq
+not
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push local 0
+call BinaryTree.getRight 1
+pop local 1
+push local 1
+call BinaryTree.dispose 1
+pop temp 0
+label IF_FALSE2
+label IF_END0
+push constant 0
+return
+function BinaryTree.preorder 2
+push argument 0
+pop pointer 0
+push pointer 0
+pop local 0
+push local 0
+call BinaryTree.getData 1
+call Output.printInt 1
+pop temp 0
+push constant 32
+call Output.printChar 1
+pop temp 0
+push local 0
+call BinaryTree.getRight 1
+pop local 1
+push local 1
+push constant 0
+eq
+not
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 1
+call BinaryTree.preorder 1
+pop temp 0
+label IF_FALSE0
+push local 0
+call BinaryTree.getLeft 1
+pop local 1
+push local 1
+push constant 0
+eq
+not
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 1
+call BinaryTree.preorder 1
+pop temp 0
+label IF_FALSE1
+push constant 0
+return

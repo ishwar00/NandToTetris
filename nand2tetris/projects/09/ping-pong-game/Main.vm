@@ -1,0 +1,12 @@
+function Main.main 0
+push constant 512
+pop static 0
+push constant 256
+pop static 1
+call Game.new 0
+pop static 2
+push static 2
+call Game.run 1
+pop temp 0
+push constant 0
+return

@@ -1,0 +1,11 @@
+class Main {
+    static int screenWidth;
+    static int screenHeight;
+    static Game game; 
+
+    function void main() {
+        let game = Game.new();
+        do game.run();
+        return;
+    }
+}

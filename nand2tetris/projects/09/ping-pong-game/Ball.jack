@@ -1,0 +1,81 @@
+class Ball {
+    field int x;
+    field int y;
+    field int radius;
+    field int velocityX;
+    field int velocityY;
+
+    constructor Ball new(int Ax, int Ay, int Aradius) {
+        let x = Ax;
+        let y = Ay;
+        let radius = Aradius;
+        let velocityX = 1;
+        let velocityY = -1;
+        return this;
+    }
+
+    method int getX() {  return x; }
+    method int getY() {  return y; }
+    method int getVelocityX() {  return velocityX; }
+    method int getVelocityY() {  return velocityY; }
+    method int getRadius() {  return radius; }
+    method void negateVelocityX() {  
+        let velocityX = -velocityX;  
+        return;
+    }
+
+    method void negateVelocityY() {  
+        let velocityY = -velocityY;  
+        return;
+    }
+
+    method void draw() {
+        do Screen.setColor(true);
+        do Screen.drawCircle(x, y, radius);
+        return;
+    }
+
+    method void move() {
+        var int buf;
+        do erase();
+        if(velocityX < 0) {
+            let x = Math.max(radius, x + velocityX);
+        } else {
+            let x = Math.min(511 - radius, x + velocityX);
+        }
+
+        if(velocityY < 0) {
+            let y = Math.max(radius, y + velocityY);
+        } else {
+            let y = Math.min(255 - radius, y + velocityY);
+        }
+        do draw();
+        return;
+    }
+
+    method void erase() {
+        do Screen.setColor(false);
+        do Screen.drawCircle(x, y, radius);
+        return;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void increaseVelocity(int change) {
+        if(velocityX < 0) {
+            let velocityX = velocityX - change;
+        } else {
+            let velocityX = velocityX + change;
+        }
+        
+        if(velocityY < 0) {
+            let velocityY = velocityY - change;
+        } else {
+            let velocityY = velocityY + change;
+        }  
+        return;
+    }
+}
