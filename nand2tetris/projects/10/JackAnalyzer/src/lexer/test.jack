@@ -1,6 +1,11 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/10/Square/Square.jack
+
 {}()[].,;+-* /&|
 <>+~
- 
+// hey there!!
 class main{
     field static int boolean char c, d;
     method constructor function void func(a, b){
@@ -15,4 +20,7 @@ class main{
         let str="hey! there";
         let foo_4_bar = "deepsource";
     }
+/* this is
+ multilne8/** comment 
+   */}
 }
