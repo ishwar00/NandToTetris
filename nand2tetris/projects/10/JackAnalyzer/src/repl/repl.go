@@ -13,7 +13,7 @@ import (
 const PROMPT = "> "
 
 
-func Start(in io.Reader, out io.Writer) {
+func Start(in io.Reader, _ io.Writer) {
     scanner := bufio.NewScanner(in)
     fmt.Println("Exit > .exit")
 
@@ -25,7 +25,7 @@ func Start(in io.Reader, out io.Writer) {
         }
 
         line := scanner.Text()
-        if ".exit" == strings.TrimSpace(line) {
+        if strings.TrimSpace(line) == ".exit" {
             return
         }
         l := lexer.LexString(line) 
