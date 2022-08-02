@@ -1,0 +1,18 @@
+{}()[].,;+-* /&|
+<>+~
+ 
+class main{
+    field static int boolean char c, d;
+    method constructor function void func(a, b){
+        let a_b=greet();
+        do greet();
+        var int g, t;
+        true,false,null;
+        return this;
+        if(a){let a=false;}else{while}
+        let a=34322;
+        do get(3,5);
+        let str="hey! there";
+        let foo_4_bar = "deepsource";
+    }
+}
