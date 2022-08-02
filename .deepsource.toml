@@ -1,9 +1,6 @@
 version = 1
 
-exclude_patterns = [
-  "utils/*",
-  "nand2tetris/tools/*"
-]
+exclude_patterns = ["nand2tetris/tools/*"]
 
 [[analyzers]]
 name = "go"
@@ -11,3 +8,11 @@ enabled = true
 
   [analyzers.meta]
   import_root = "github.com/ishwar00/NandToTetris"
+
+[[transformers]]
+name = "gofumpt"
+enabled = true
+
+[[transformers]]
+name = "gofmt"
+enabled = true
