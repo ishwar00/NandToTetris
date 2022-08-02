@@ -12,27 +12,25 @@ import (
 
 const PROMPT = "> "
 
-
 func Start(in io.Reader, _ io.Writer) {
-    scanner := bufio.NewScanner(in)
-    fmt.Println("Exit > .exit")
+	scanner := bufio.NewScanner(in)
+	fmt.Println("Exit > .exit")
 
-    for {
-        fmt.Print(PROMPT)
-        scanned := scanner.Scan()
-        if !scanned {
-            return
-        }
+	for {
+		fmt.Print(PROMPT)
+		scanned := scanner.Scan()
+		if !scanned {
+			return
+		}
 
-        line := scanner.Text()
-        if strings.TrimSpace(line) == ".exit" {
-            return
-        }
-        l := lexer.LexString(line) 
+		line := scanner.Text()
+		if strings.TrimSpace(line) == ".exit" {
+			return
+		}
+		l := lexer.LexString(line)
 
-        for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-            fmt.Printf("%+v\n", tok)
-        }
-    }
+		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
+			fmt.Printf("%+v\n", tok)
+		}
+	}
 }
-
