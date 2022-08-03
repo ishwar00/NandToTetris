@@ -218,7 +218,6 @@ func (cr CodeWriter) WriteCall(calleeFunction, currentFunction string, nArgs int
 
 // implements command: return
 func (cr CodeWriter) WriteReturn() error {
-
 	//						 	    ARG  --> |		arg0	   |
 	//										 |		...		   |
 	//										 |		arg1	   |
@@ -413,7 +412,7 @@ func (cr *CodeWriter) WritePushPop(command int, segment string, index int) error
 				"A=M",
 				"M=D", // *R13 = D
 			}
-			
+
 		case "temp":
 			code = []string{
 				"@5",

@@ -14,7 +14,6 @@ import (
 	"github.com/ishwar00/JackAnalyzer/lexerXML"
 )
 
-
 func main() {
     // user, err := user.Current()
     // if err != nil {
@@ -46,4 +45,3 @@ func main() {
         panic(errMsg)
     }
 }
-
