@@ -44,7 +44,7 @@ func LexFile(fileName string) (*Lexer, error) {
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
-    l.consumeComment()
+	l.consumeComment()
 	l.consumeWhiteSpace()
 
 	switch l.char {
@@ -151,41 +151,41 @@ func (l *Lexer) consumeWhiteSpace() {
 }
 
 func (l *Lexer) peekChar() byte {
-    if l.readPosition >= len(l.input) {
-        return 0
-    } 
-    return l.input[l.readPosition]
+	if l.readPosition >= len(l.input) {
+		return 0
+	}
+	return l.input[l.readPosition]
 }
 
 func (l *Lexer) consumeComment() {
-    l.consumeWhiteSpace()
-    if l.char == '/' && l.peekChar() == '*' {
-        l.consumeMultiLineComment()
-        l.readChar() // consume *
-        l.readChar() // consume /
-        l.consumeComment() // going for next immediate comment
-    } else if l.char == '/' && l.peekChar() == '/' {
-        l.consumeSingleLineComment()
-        l.consumeComment() // going for next immediate comment
-        // not consuming current \n character, we will leave that
-        // job to consumeWhiteSpace routine
-    }
+	l.consumeWhiteSpace()
+	if l.char == '/' && l.peekChar() == '*' {
+		l.consumeMultiLineComment()
+		l.readChar()       // consume *
+		l.readChar()       // consume /
+		l.consumeComment() // going for next immediate comment
+	} else if l.char == '/' && l.peekChar() == '/' {
+		l.consumeSingleLineComment()
+		l.consumeComment() // going for next immediate comment
+		// not consuming current \n character, we will leave that
+		// job to consumeWhiteSpace routine
+	}
 }
 
 func (l *Lexer) consumeMultiLineComment() {
-    for l.char != 0 && !(l.char == '*' && l.peekChar() == '/') {
-        if l.char == '\n' {
-            l.onLine++
-            l.onColumn = -1
-        }
-        l.readChar()
-    }
+	for l.char != 0 && !(l.char == '*' && l.peekChar() == '/') {
+		if l.char == '\n' {
+			l.onLine++
+			l.onColumn = -1
+		}
+		l.readChar()
+	}
 }
 
 func (l *Lexer) consumeSingleLineComment() {
-    for l.char != '\n' && l.char != 0 {
-        l.readChar()
-    }
+	for l.char != '\n' && l.char != 0 {
+		l.readChar()
+	}
 }
 
 func (l *Lexer) newToken(tokenType token.TokenType, tok string) token.Token {
