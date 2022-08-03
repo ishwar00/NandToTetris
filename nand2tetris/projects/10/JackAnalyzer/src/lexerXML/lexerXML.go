@@ -17,11 +17,11 @@ func Run(file string) error {
 
 	ident := "\t"
 
-	outputFile, close, err := createOutputFile(file)
+	outputFile, closer, err := createOutputFile(file)
 	if err != nil {
 		return err
 	}
-	defer close()
+	defer closer()
 
 	outputFile.WriteString("<tokens>\n")
 	for tok, buf := l.NextToken(), ""; tok.Type != token.EOF; tok = l.NextToken() {
