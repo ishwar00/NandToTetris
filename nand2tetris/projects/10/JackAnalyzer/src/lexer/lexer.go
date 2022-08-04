@@ -3,6 +3,7 @@ package lexer
 import (
 	"os"
 
+	"github.com/ishwar00/JackAnalyzer/errHandler"
 	"github.com/ishwar00/JackAnalyzer/token"
 )
 
@@ -91,6 +92,13 @@ func (l *Lexer) NextToken() token.Token {
 		str := l.readString()
 		if l.char != '"' { // there is no closing double quote
 			tok = l.newToken(token.ILLEGAL, str)
+			errhandler.Add(errhandler.Error{
+				ErrMsg:   "closing \" is missing, string values are enclosed in \"\n",
+				OnLine:   tok.OnLine,
+				OnColumn: tok.OnColumn,
+				Length:   len(tok.Literal),
+				File:     tok.InFile,
+			})
 			return tok
 		} else { // there is closing double quote
 			tok = l.newToken(token.STR_CONST, str)
@@ -110,6 +118,13 @@ func (l *Lexer) NextToken() token.Token {
 			return tok
 		} else {
 			tok = l.newToken(token.ILLEGAL, string(l.char))
+			errhandler.Add(errhandler.Error{
+				ErrMsg:   "found unrecognized character\n",
+				OnLine:   tok.OnLine,
+				OnColumn: tok.OnColumn,
+				Length:   len(tok.Literal),
+				File:     tok.InFile,
+			})
 		}
 	}
 	l.readChar() // advance to next character
@@ -160,9 +175,21 @@ func (l *Lexer) peekChar() byte {
 func (l *Lexer) consumeComment() {
 	l.consumeWhiteSpace()
 	if l.char == '/' && l.peekChar() == '*' {
+		onLine, onColumn := l.onLine, l.onColumn
 		l.consumeMultiLineComment()
-		l.readChar()       // consume *
-		l.readChar()       // consume /
+		ok := l.char == '*'
+		l.readChar() // consume *
+		ok = ok && l.char == '/'
+		l.readChar() // consume /
+		if !ok {
+			errhandler.Add(errhandler.Error{
+				ErrMsg:   "multiline comment begins here but not closed it with */",
+				OnLine:   onLine,
+				OnColumn: onColumn,
+				Length:   2,
+				File:     l.file,
+			})
+		}
 		l.consumeComment() // going for next immediate comment
 	} else if l.char == '/' && l.peekChar() == '/' {
 		l.consumeSingleLineComment()

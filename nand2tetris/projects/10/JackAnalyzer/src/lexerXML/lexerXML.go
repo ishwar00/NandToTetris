@@ -70,7 +70,7 @@ func createOutputFile(path string) (*os.File, func(), error) {
 		return nil, func() {}, fmt.Errorf("%s, file extension must end with .jack", path)
 	}
 
-	outputPath := path[0:len(path)-len(ext)] + "TT.xml" // T indicates tokens
+	outputPath := path[0:len(path)-len(ext)] + "TT.xml" // TT indicates tokens
 	file, err := os.Create(outputPath)
 	return file, func() { file.Close() }, err
 }

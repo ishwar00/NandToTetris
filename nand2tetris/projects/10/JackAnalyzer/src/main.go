@@ -11,7 +11,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ishwar00/JackAnalyzer/lexerXML"
+	errhandler "github.com/ishwar00/JackAnalyzer/errHandler"
+	lexerxml "github.com/ishwar00/JackAnalyzer/lexerXML"
 )
 
 func main() {
@@ -38,8 +39,10 @@ func main() {
 				lexerxml.Run(filePath)
 			}
 		}
-	} else if ext == ".ext" {
+		errhandler.ReportAll()
+	} else if ext == ".jack" {
 		lexerxml.Run(path)
+		errhandler.ReportAll()
 	} else {
 		errMsg := fmt.Errorf("invalid argument %s", path)
 		panic(errMsg)
