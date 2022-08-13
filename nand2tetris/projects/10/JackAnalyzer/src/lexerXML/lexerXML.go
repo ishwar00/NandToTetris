@@ -57,9 +57,9 @@ func Run(file string) error {
 		outputFile.WriteString(buf)
 	}
 	outputFile.WriteString("</tokens>")
-    if l.FoundErrors() {
-        l.ReportErrors()
-    }
+	if l.FoundErrors() {
+		l.ReportErrors()
+	}
 	return nil
 }
 
@@ -72,9 +72,9 @@ func createOutputFile(path string) (*os.File, func(), error) {
 	if ext != ".jack" {
 		return nil, func() {}, fmt.Errorf("%s, file extension must end with .jack", path)
 	}
-    // TT just to avoid name collison with with testing files ending with T.xml 
-    // this lexer supposed to produce similar output to file ending with T.xml file
-	outputPath := path[0:len(path)-len(ext)] + "TT.xml" 
+	// TT just to avoid name collison with with testing files ending with T.xml
+	// this lexer supposed to produce similar output to file ending with T.xml file
+	outputPath := path[0:len(path)-len(ext)] + "TT.xml"
 	file, err := os.Create(outputPath)
 	return file, func() { file.Close() }, err
 }
