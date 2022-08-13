@@ -14,32 +14,31 @@ type Error struct {
 	ErrMsg   string
 	OnLine   int
 	OnColumn int
-	Length   int // this is the length of highlighted text, indicating error
+	// this is the length of highlighted text, indicating error
 	// starting from onColumn to onColumn + length
-	File string // file path, must be absolute
+	Length int
+	File   string // file path, must be absolute
 }
 
-var errQueue []Error
-
-func init() {
-	errQueue = make([]Error, 0)
+type ErrHandler struct {
+	queue []Error
 }
 
-func Add(errMsg Error) error {
+func (e *ErrHandler) Add(errMsg Error) error {
 	absPath, err := filepath.Abs(errMsg.File)
 	if err != nil {
 		return err
 	}
 	errMsg.File = absPath
-	errQueue = append(errQueue, errMsg)
+	e.queue = append(e.queue, errMsg)
 	return nil
 }
 
-func ReportAll() {
+func (e ErrHandler) ReportAll() {
 	fileErrs := map[string][]Error{}
 
-	// classify errors on files
-	for _, err := range errQueue {
+	// classify errors by files
+	for _, err := range e.queue {
 		if _, ok := fileErrs[err.File]; !ok {
 			fileErrs[err.File] = make([]Error, 0)
 		}
@@ -47,7 +46,7 @@ func ReportAll() {
 	}
 
 	for file, errs := range fileErrs { // Eeee!! this is little more complicated than i anticipated
-		errMsg := fmt.Sprintf("found %d errors in %s\n\n", len(errs), file)
+		errMsg := fmt.Sprintf("found %d error(s) in %s\n\n", len(errs), file)
 		os.Stdout.WriteString(errMsg)
 
 		sort.Slice(errs, func(i, j int) bool { return errs[i].OnLine < errs[j].OnLine })
@@ -93,7 +92,7 @@ func report(line string, errs []Error) {
 	}
 	errLine += line[last:]
 
-	buf := fmt.Sprintf("on line %v:", errs[0].OnLine)
+	buf := fmt.Sprintf("on line %v:", errs[0].OnLine+1) // adding 1, because of zero indexing
 	errPointer = createString(len(buf), ' ') + errPointer
 	errMsg := fmt.Sprintf("%s%s\n", buf, errLine)
 	errMsg += errPointer
@@ -124,6 +123,10 @@ func readFile(filePath string) []string {
 	return program
 }
 
-func ClearBuffer() {
-	errQueue = make([]Error, 0)
+func (e *ErrHandler) QueueSize() int {
+	return len(e.queue)
+}
+
+func (e *ErrHandler) ClearQueue() {
+	e.queue = make([]Error, 0)
 }

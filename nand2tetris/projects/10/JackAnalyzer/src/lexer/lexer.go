@@ -15,6 +15,7 @@ type Lexer struct {
 	file         string
 	onColumn     int
 	onLine       int
+    errors       errhandler.ErrHandler
 }
 
 func LexString(input string) *Lexer {
@@ -92,7 +93,7 @@ func (l *Lexer) NextToken() token.Token {
 		str := l.readString()
 		if l.char != '"' { // there is no closing double quote
 			tok = l.newToken(token.ILLEGAL, str)
-			errhandler.Add(errhandler.Error{
+			l.errors.Add(errhandler.Error{
 				ErrMsg:   "closing \" is missing, string values are enclosed in \"\n",
 				OnLine:   tok.OnLine,
 				OnColumn: tok.OnColumn,
@@ -118,7 +119,7 @@ func (l *Lexer) NextToken() token.Token {
 			return tok
 		} else {
 			tok = l.newToken(token.ILLEGAL, string(l.char))
-			errhandler.Add(errhandler.Error{
+			l.errors.Add(errhandler.Error{
 				ErrMsg:   "found unrecognized character\n",
 				OnLine:   tok.OnLine,
 				OnColumn: tok.OnColumn,
@@ -129,6 +130,14 @@ func (l *Lexer) NextToken() token.Token {
 	}
 	l.readChar() // advance to next character
 	return tok
+}
+
+func (l *Lexer) ReportErrors() {
+    l.errors.ReportAll()
+}
+
+func (l *Lexer) FoundErrors() bool {
+    return l.errors.QueueSize() != 0
 }
 
 func (l *Lexer) readString() string {
@@ -182,7 +191,7 @@ func (l *Lexer) consumeComment() {
 		ok = ok && l.char == '/'
 		l.readChar() // consume /
 		if !ok {
-			errhandler.Add(errhandler.Error{
+			l.errors.Add(errhandler.Error{
 				ErrMsg:   "multiline comment begins here but not closed it with */",
 				OnLine:   onLine,
 				OnColumn: onColumn,
