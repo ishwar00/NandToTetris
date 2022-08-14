@@ -15,7 +15,7 @@ type Lexer struct {
 	file         string
 	onColumn     int
 	onLine       int
-    errors       errhandler.ErrHandler
+	errors       errhandler.ErrHandler
 }
 
 func LexString(input string) *Lexer {
@@ -133,11 +133,14 @@ func (l *Lexer) NextToken() token.Token {
 }
 
 func (l *Lexer) ReportErrors() {
-    l.errors.ReportAll()
+	if l.FoundErrors() {
+		os.Stdout.WriteString("lexing error(s)\n")
+		l.errors.ReportAll()
+	}
 }
 
 func (l *Lexer) FoundErrors() bool {
-    return l.errors.QueueSize() != 0
+	return l.errors.QueueSize() != 0
 }
 
 func (l *Lexer) readString() string {

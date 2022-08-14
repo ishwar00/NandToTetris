@@ -90,6 +90,11 @@ var keywords = map[string]TokenType{
 	"return":      RETURN,
 }
 
+func IsKeyword(tok string) bool {
+	_, ok := keywords[tok]
+	return ok
+}
+
 func LookupIdent(ident string) TokenType {
 	if tokenType, ok := keywords[ident]; ok {
 		return tokenType

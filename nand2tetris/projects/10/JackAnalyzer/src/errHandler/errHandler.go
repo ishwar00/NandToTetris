@@ -53,7 +53,7 @@ func (e ErrHandler) ReportAll() {
 		program := readFile(file)
 		errBuf := map[string][]Error{} // buffer for grouping errors with same error message on same line
 
-		curLine := errs[0].OnLine // buffering error messages of curren line
+		curLine := errs[0].OnLine // buffering error messages of current line
 		for _, err := range errs {
 			if curLine == err.OnLine {
 				if _, ok := errBuf[err.ErrMsg]; !ok {
@@ -88,16 +88,16 @@ func report(line string, errs []Error) {
 
 		last = err.OnColumn + err.Length
 		errLine += color.RedString(line[err.OnColumn:last])
-		errPointer += color.RedString(createString(err.Length, '^'))
+		errPointer += createString(err.Length, '^')
 	}
 	errLine += line[last:]
 
-	buf := fmt.Sprintf("on line %v:", errs[0].OnLine+1) // adding 1, because of zero indexing
-	errPointer = createString(len(buf), ' ') + errPointer
-	errMsg := fmt.Sprintf("%s%s\n", buf, errLine)
-	errMsg += errPointer
-	errMsg += fmt.Sprintf("\n\t %s\n", color.GreenString(errs[0].ErrMsg))
-
+	lineNumber := fmt.Sprintf(" %d| ", errs[0].OnLine+1)
+	padding := createString(len(lineNumber)-2, ' ') + "| " // ----|
+	errMsg := padding + "\n"
+	errMsg += lineNumber + errLine + "\n"
+	errMsg += padding + errPointer + "\n"
+	errMsg += padding + errs[0].ErrMsg + "\n\n"
 	os.Stdout.WriteString(errMsg)
 }
 
