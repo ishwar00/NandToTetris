@@ -108,24 +108,24 @@ func (i *IntConstantExp) String() string { return i.Token.Literal }
 func (i *IntConstantExp) GetToken() token.Token { return i.Token }
 
 type VarNameExp struct {
-    Token token.Token
-    Name  string
-    Expression Expression
+	Token      token.Token
+	Name       string
+	Expression Expression
 }
 
 func (v *VarNameExp) expressionNode() {}
 
-func (v *VarNameExp) String() string { 
-    return v.Name
+func (v *VarNameExp) String() string {
+	return v.Name
 }
 
 func (v *VarNameExp) GetToken() token.Token { return v.Token }
 
 // let varName = Expression
 type LetSta struct {
-    Token token.Token // let
-    VarName VarNameExp
-    Expression Expression
+	Token      token.Token // let
+	VarName    VarNameExp
+	Expression Expression
 }
 
 func (l *LetSta) statementNode() {}
@@ -133,21 +133,11 @@ func (l *LetSta) statementNode() {}
 func (l *LetSta) GetToken() token.Token { return l.Token }
 
 func (l *LetSta) String() string {
-    var out bytes.Buffer
+	var out bytes.Buffer
 
-    buf := fmt.Sprintf("let %s = ", l.VarName.Name)
-    out.WriteString(buf)
-    out.WriteString(l.Expression.String() + ";")
-    
-    return out.String()
+	buf := fmt.Sprintf("let %s = ", l.VarName.Name)
+	out.WriteString(buf)
+	out.WriteString(l.Expression.String() + ";")
+
+	return out.String()
 }
-
-
-
-
-
-
-
-
-
-
