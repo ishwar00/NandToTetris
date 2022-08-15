@@ -1,4 +1,6 @@
-var int a, b;
-var int $df;
-var 343 foo_bar;
+class name {
+    static int a, ;
+    field boolean int, d;
+    var Ball hey;
+}
 

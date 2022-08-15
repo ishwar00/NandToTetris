@@ -35,7 +35,11 @@ func (e *ErrHandler) Add(errMsg Error) error {
 }
 
 func (e ErrHandler) ReportAll() {
+    if e.QueueSize() == 0 {
+        return 
+    }
 	fileErrs := map[string][]Error{}
+
 
 	// classify errors by files
 	for _, err := range e.queue {

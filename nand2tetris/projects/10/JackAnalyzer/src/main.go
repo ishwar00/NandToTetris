@@ -45,7 +45,9 @@ func main() {
 		program := p.ParseProgram()
 		l.ReportErrors()
 		p.ReportErrors()
-		fmt.Println(program.Statements)
+		if program != nil {
+			fmt.Println(program.String())
+		}
 	} else {
 		errMsg := fmt.Errorf("invalid argument %s", path)
 		panic(errMsg)
