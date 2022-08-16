@@ -31,8 +31,8 @@ func main() {
 					panic(err)
 				}
 				p := parser.New(l)
-				program := p.ParseProgram()
-				fmt.Println(program.String())
+				p.ParseProgram()
+				// fmt.Println(program.String())
 			}
 		}
 
@@ -42,12 +42,9 @@ func main() {
 			panic(err)
 		}
 		p := parser.New(l)
-		program := p.ParseProgram()
+		p.ParseProgram()
 		l.ReportErrors()
 		p.ReportErrors()
-		if program != nil {
-			fmt.Println(program.String())
-		}
 	} else {
 		errMsg := fmt.Errorf("invalid argument %s", path)
 		panic(errMsg)

@@ -149,20 +149,61 @@ func (p *Parser) peekClassVarDec() bool {
 	return p.peekTokenIs(token.STATIC) || p.peekTokenIs(token.FIELD)
 }
 
-func (p *Parser) ParseProgram() ast.Declare {
-	return p.parseClassDec()
+func (p *Parser) peekStatement() bool {
+	return p.peekTokenIs(token.LET) || p.peekTokenIs(token.IF) ||
+		p.peekTokenIs(token.WHILE) || p.peekTokenIs(token.DO) || p.peekTokenIs(token.RETURN)
 }
 
-// func (p *Parser) parseStatement() ast.Declare {
-// 	switch p.curToken.Type {
-// 	case token.IF:
-// 	case token.DO:
-// 	case token.LET:
-//     case token.WHILE:
-// 	default:
-// 		return nil
-// 	}
-// }
+func (p *Parser) skipToNextStatement() {
+	for !p.peekTokenIs(token.EOF) && !p.peekStatement() {
+		p.nextToken()
+	}
+}
+
+func (p *Parser) ParseProgram() {
+	// buf := p.parseIfElseSta()
+	// if buf != nil && !reflect.ValueOf(buf).IsZero() {
+	//     fmt.Println(buf.String())
+	// }
+	var buf interface {
+		String() string
+	}
+	for !p.curTokenIs(token.EOF) {
+		switch p.curToken.Type {
+		case token.CLASS:
+			// buf = p.parseClassDec()
+		case token.IF:
+			buf = p.parseIfElseSta()
+		case token.WHILE:
+			buf = p.parseWhileSta()
+		case token.RETURN:
+			buf = p.parseReturnSta()
+		case token.LET:
+			buf = p.parseLetStatement()
+		}
+		if buf != nil && !reflect.ValueOf(buf).IsZero() {
+			fmt.Println(buf.String())
+		}
+		p.nextToken()
+	}
+}
+
+func (p *Parser) parseStatement() ast.Statement {
+	switch p.curToken.Type {
+	case token.IF:
+		return p.parseIfElseSta()
+	case token.DO:
+		return nil
+	case token.LET:
+		return p.parseLetStatement()
+	case token.WHILE:
+		return p.parseWhileSta()
+	case token.RETURN:
+		return p.parseReturnSta()
+	default:
+		return nil
+	}
+}
 
 // helper to add error message
 func (p *Parser) expectedIdentifierErr(tok token.Token) {
@@ -172,6 +213,11 @@ func (p *Parser) expectedIdentifierErr(tok token.Token) {
 			yellow(tok.Literal))
 	}
 	p.addError(errMsg, tok)
+}
+
+func (p *Parser) expectedErr(expected string, got token.Token) {
+	errMsg := "expected " + green(expected) + " but got " + red(got.Literal)
+	p.addError(errMsg, got)
 }
 
 // parses: static|field|var varName1, varName2, ... ;
@@ -226,8 +272,7 @@ func (p *Parser) parseVarDec() *ast.VarDec {
 	}
 
 	if !p.peekTokenIs(token.SEMICO) {
-		errMsg := fmt.Sprintf("expected ';', but got '%s'", p.peekToken.Literal)
-		p.addError(errMsg, p.peekToken)
+		p.expectedErr(";", p.peekToken)
 		p.skipToSemicolon()
 		return nil
 	}
@@ -235,6 +280,13 @@ func (p *Parser) parseVarDec() *ast.VarDec {
 	return varDec
 }
 
+// class className {
+//     static|field varName1, varName2, ...;
+//     function|method|constructor type subName(type1 p1, type2 p2, ...) {
+//         var v1, v2 ...;
+//         if|while|do|return statements
+//    }
+// }
 func (p *Parser) parseClassDec() *ast.ClassDec {
 	classDec := &ast.ClassDec{
 		Token: p.curToken, // keyword class
@@ -249,8 +301,7 @@ func (p *Parser) parseClassDec() *ast.ClassDec {
 	classDec.Name = p.curToken.Literal
 
 	if !p.peekTokenIs(token.LBRACE) {
-		errMsg := fmt.Sprintf("expected %s, but got %v", yellow("{"), red(p.peekToken.Literal))
-		p.addError(errMsg, p.peekToken)
+		p.expectedErr("{", p.peekToken)
 		return nil
 	}
 	p.nextToken()
@@ -263,8 +314,7 @@ func (p *Parser) parseClassDec() *ast.ClassDec {
 	}
 
 	if !p.peekTokenIs(token.RBRACE) {
-		errMsg := fmt.Sprintf("expected a %s, but got %+v", yellow("}"), red(p.peekToken.Literal))
-		p.addError(errMsg, p.peekToken)
+		p.expectedErr("}", p.peekToken)
 		return nil
 	}
 	return classDec
@@ -286,6 +336,7 @@ func (p *Parser) parseVarName() ast.Expression {
 	return &ast.VarNameExp{Token: p.curToken, Name: p.curToken.Literal}
 }
 
+// let varName ('[' Index ']')? = Expression
 func (p *Parser) parseLetStatement() ast.Statement {
 	letSta := &ast.LetSta{Token: p.curToken}
 
@@ -301,27 +352,49 @@ func (p *Parser) parseLetStatement() ast.Statement {
 		Name:  p.curToken.Literal,
 	}
 
+	if p.peekTokenIs(token.LBRACK) {
+		p.nextToken()
+		p.nextToken()
+		index := p.parseExpression(LOWEST)
+		if index == nil || reflect.ValueOf(index).IsZero() {
+			p.skipToNextStatement()
+			return nil
+		}
+		letSta.Index = index
+		if !p.peekTokenIs(token.RBRACK) {
+			p.expectedErr("]", p.peekToken)
+			p.skipToNextStatement()
+			return nil
+		}
+		p.nextToken()
+	}
+
 	if !p.peekTokenIs(token.EQ) {
-		errMsg := "expected " + green("=") + " but got " + red(p.peekToken.Literal)
-		p.addError(errMsg, p.peekToken)
+		p.expectedErr("=", p.peekToken)
 		return nil
 	}
 
 	p.nextToken()
 	p.nextToken()
 	exp := p.parseExpression(LOWEST)
-	if exp != nil && !reflect.ValueOf(exp).IsZero() {
-		letSta.Expression = exp
-		return letSta
+	if exp == nil || reflect.ValueOf(exp).IsZero() {
+		return nil
 	}
-	return nil
+
+	letSta.Expression = exp
+	if !p.peekTokenIs(token.SEMICO) {
+		p.expectedErr(";", p.peekToken)
+		p.skipToNextStatement()
+		return nil
+	}
+	p.nextToken()
+	return letSta
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix, ok := p.prefixFns[p.curToken.Type]
 	if !ok {
-		errMsg := "expected an expression, but got " + red(p.curToken.Literal)
-		p.addError(errMsg, p.curToken)
+		p.expectedErr("expression", p.curToken)
 		return nil
 	}
 	leftExp := prefix()
@@ -333,9 +406,155 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		p.nextToken()
 		leftExp = infix(leftExp)
 	}
-
-	if p.peekTokenIs(token.SEMICO) {
-		p.nextToken()
-	}
 	return leftExp
+}
+
+// if(Condition) {
+//    statements
+// } (else {
+//    statements
+// })?
+func (p *Parser) parseIfElseSta() *ast.IfElseSta {
+	ifElse := &ast.IfElseSta{
+		Token: p.curToken,
+	}
+
+	expErr := func(exp string, got token.Token) {
+		p.expectedErr(exp, got)
+		p.skipToNextStatement()
+	}
+
+	if !p.peekTokenIs(token.LPAREN) {
+		expErr("(", p.peekToken)
+		p.skipToNextStatement()
+		return nil
+	}
+
+	p.nextToken()
+	p.nextToken()
+	condition := p.parseExpression(LOWEST)
+	if condition == nil || reflect.ValueOf(condition).IsZero() {
+		p.skipToNextStatement()
+		return nil
+	}
+
+	ifElse.Condition = condition
+
+	if !p.peekTokenIs(token.RPAREN) {
+		expErr(")", p.peekToken)
+		p.skipToNextStatement()
+		return nil
+	}
+	p.nextToken()
+
+	if !p.peekTokenIs(token.LBRACE) {
+		expErr("{", p.peekToken)
+		p.skipToNextStatement()
+		return nil
+	}
+	p.nextToken()
+	ifElse.Then = p.parseStatementBlock()
+	if ifElse.Then == nil {
+		p.skipToNextStatement()
+		return nil
+	}
+
+	if p.peekTokenIs(token.ELSE) {
+		p.nextToken()
+		if !p.peekTokenIs(token.LBRACE) {
+			expErr("{", p.peekToken)
+			p.skipToNextStatement()
+			return nil
+		}
+		p.nextToken()
+		ifElse.Else = p.parseStatementBlock()
+		if ifElse.Else == nil {
+			p.skipToNextStatement()
+			return nil
+		}
+	}
+	return ifElse
+}
+
+// { statement1; statement2; ... statementN; }
+func (p *Parser) parseStatementBlock() *ast.StatementBlockSta {
+	stmtBlock := &ast.StatementBlockSta{
+		Token: p.curToken, // {
+	}
+
+	for p.peekStatement() {
+		p.nextToken()
+		stmt := p.parseStatement()
+		if stmt != nil && !reflect.ValueOf(stmt).IsZero() {
+			stmtBlock.Statements = append(stmtBlock.Statements, stmt)
+		}
+	}
+
+	if !p.peekTokenIs(token.RBRACE) {
+		p.expectedErr("}", p.peekToken)
+		p.skipToNextStatement()
+		return nil
+	}
+	p.nextToken()
+	return stmtBlock
+}
+
+func (p *Parser) parseWhileSta() *ast.WhileSta {
+	whileSta := &ast.WhileSta{
+		Token: p.curToken,
+	}
+
+	if !p.peekTokenIs(token.LPAREN) {
+		p.expectedErr("(", p.peekToken)
+		p.skipToNextStatement()
+		return nil
+	}
+
+	p.nextToken()
+	p.nextToken()
+	condition := p.parseExpression(LOWEST)
+	if condition == nil || reflect.ValueOf(condition).IsZero() {
+		p.skipToNextStatement()
+		return nil
+	}
+	whileSta.Condition = condition
+	if !p.peekTokenIs(token.RPAREN) {
+		p.expectedErr(")", p.peekToken)
+		p.skipToNextStatement()
+		return nil
+	}
+	p.nextToken()
+	p.nextToken()
+	whileSta.Statements = p.parseStatementBlock()
+	if whileSta.Statements == nil {
+		p.skipToNextStatement()
+		return nil
+	}
+	return whileSta
+}
+
+// return; return Expression;
+func (p *Parser) parseReturnSta() *ast.ReturnSta {
+	returnSta := &ast.ReturnSta{
+		Token: p.curToken,
+	}
+
+	if !p.peekTokenIs(token.SEMICO) {
+		p.nextToken()
+		exp := p.parseExpression(LOWEST)
+		if exp == nil || reflect.ValueOf(exp).IsZero() {
+			p.skipToNextStatement()
+			return nil
+		}
+		returnSta.Expression = exp
+	}
+
+	if !p.peekTokenIs(token.SEMICO) {
+		p.expectedErr(";", p.peekToken)
+		p.skipToNextStatement()
+		return nil
+	}
+	p.nextToken()
+
+	return returnSta
 }

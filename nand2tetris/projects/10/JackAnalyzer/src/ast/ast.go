@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 
 	"github.com/ishwar00/JackAnalyzer/token"
 )
@@ -57,6 +58,10 @@ func (vd *VarDec) GetToken() token.Token { return vd.Token }
 func (vd *VarDec) declarationNode()      {}
 
 func (vd *VarDec) String() string {
+	if vd == nil {
+		return ""
+	}
+
 	var out bytes.Buffer
 
 	buf := fmt.Sprintf("%s %s ", vd.Token.Literal, vd.DataType.Literal)
@@ -83,6 +88,10 @@ func (cd *ClassDec) GetToken() token.Token { return cd.Token }
 func (cd *ClassDec) declarationNode()      {}
 
 func (cs *ClassDec) String() string {
+	if cs == nil {
+		return ""
+	}
+
 	var out bytes.Buffer
 	tab := "    "
 
@@ -103,7 +112,12 @@ type IntConstantExp struct {
 
 func (i *IntConstantExp) expressionNode() {}
 
-func (i *IntConstantExp) String() string { return i.Token.Literal }
+func (i *IntConstantExp) String() string {
+	if i == nil {
+		return ""
+	}
+	return i.Token.Literal
+}
 
 func (i *IntConstantExp) GetToken() token.Token { return i.Token }
 
@@ -116,15 +130,19 @@ type VarNameExp struct {
 func (v *VarNameExp) expressionNode() {}
 
 func (v *VarNameExp) String() string {
+	if v == nil {
+		return ""
+	}
 	return v.Name
 }
 
 func (v *VarNameExp) GetToken() token.Token { return v.Token }
 
-// let varName = Expression
+// let varName ('[' Index ']')? = Expression
 type LetSta struct {
 	Token      token.Token // let
 	VarName    VarNameExp
+	Index      Expression
 	Expression Expression
 }
 
@@ -133,11 +151,120 @@ func (l *LetSta) statementNode() {}
 func (l *LetSta) GetToken() token.Token { return l.Token }
 
 func (l *LetSta) String() string {
+	if l == nil {
+		return ""
+	}
+
 	var out bytes.Buffer
 
-	buf := fmt.Sprintf("let %s = ", l.VarName.Name)
-	out.WriteString(buf)
-	out.WriteString(l.Expression.String() + ";")
+	out.WriteString("let " + l.VarName.Name)
+	if l.Index != nil && !reflect.ValueOf(l.Index).IsZero() {
+		out.WriteString("[" + l.Index.String() + "]")
+	}
+	out.WriteString("=" + l.Expression.String() + ";")
 
+	return out.String()
+}
+
+type StatementBlockSta struct {
+	Token      token.Token // {
+	Statements []Statement
+}
+
+func (sb *StatementBlockSta) statementNode() {}
+
+func (sb *StatementBlockSta) GetToken() token.Token { return sb.Token }
+
+func (sb *StatementBlockSta) String() string {
+	if sb == nil {
+		return ""
+	}
+
+	var out bytes.Buffer
+
+	for _, stmt := range sb.Statements {
+		if stmt != nil && !reflect.ValueOf(stmt).IsZero() {
+			out.WriteString(stmt.String() + "\n")
+		}
+	}
+	return out.String()
+}
+
+// if(Condition) {
+//     Then
+// }(else {
+//     Else
+// })?
+type IfElseSta struct {
+	Token     token.Token // if
+	Condition Expression
+	Then      *StatementBlockSta
+	Else      *StatementBlockSta
+}
+
+func (ie *IfElseSta) statementNode() {}
+
+func (ie *IfElseSta) GetToken() token.Token { return ie.Token }
+
+func (ie *IfElseSta) String() string {
+	if ie == nil {
+		return ""
+	}
+
+	var out bytes.Buffer
+
+	out.WriteString("if(" + ie.Condition.String() + ") {\n")
+	out.WriteString(ie.Then.String() + "\n} ")
+	if ie.Else != nil {
+		out.WriteString("else {\n" + ie.Else.String())
+		out.WriteString("\n}")
+	}
+	return out.String()
+}
+
+type WhileSta struct {
+	Token      token.Token
+	Condition  Expression
+	Statements *StatementBlockSta
+}
+
+func (ws *WhileSta) statementNode() {}
+
+func (ws *WhileSta) GetToken() token.Token { return ws.Token }
+
+func (ws *WhileSta) String() string {
+	if ws == nil {
+		return ""
+	}
+
+	var out bytes.Buffer
+
+	out.WriteString("while(" + ws.Condition.String() + ") {\n")
+	out.WriteString(ws.Statements.String())
+	out.WriteString("\n}")
+
+	return out.String()
+}
+
+type ReturnSta struct {
+	Token      token.Token
+	Expression Expression
+}
+
+func (r *ReturnSta) statementNode() {}
+
+func (r *ReturnSta) GetToken() token.Token { return r.Token }
+
+func (r *ReturnSta) String() string {
+	if r == nil {
+		return ""
+	}
+
+	var out bytes.Buffer
+	out.WriteString("return ")
+	if r.Expression != nil {
+		out.WriteString(r.Expression.String())
+	}
+	out.WriteString(";")
 	return out.String()
 }
