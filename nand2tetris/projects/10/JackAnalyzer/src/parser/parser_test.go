@@ -12,188 +12,187 @@ import (
 )
 
 func TestLetStatement(t *testing.T) {
-    tests := []struct {
-        input string
-        expLetSta ast.LetSta
-    }{
-        { // test 0
-            input: "let a = 34;",
-            expLetSta: ast.LetSta{
-                Token: token.Token{
-                    Literal: "let",
-                    Type: token.LET,
-                    OnLine: 0,
-                    OnColumn: 0,
-                },
-                VarName: ast.VarNameExp {
-                    Token: token.Token {
-                        Literal: "a",
-                        Type: token.IDENT,
-                        OnLine: 0,
-                        OnColumn: 4 ,
-                    },
-                    Name: "a",
-                },
-                Expression: &ast.IntConstantExp{
-                    Token: token.Token{
-                        Literal: "34",
-                        Type: token.INT,
-                        OnLine: 0,
-                        OnColumn: 8,
-                    },
-                    Value: 34,
-                },
-            },
-        },
-        { // test 1
-            input: "let a = abc;",
-            expLetSta: ast.LetSta{
-                Token: token.Token{
-                    Literal: "let",
-                    Type: token.LET,
-                    OnLine: 0,
-                    OnColumn: 0,
-                },
-                VarName: ast.VarNameExp {
-                    Token: token.Token {
-                        Literal: "a",
-                        Type: token.IDENT,
-                        OnLine: 0,
-                        OnColumn: 4 ,
-                    },
-                    Name: "a",
-                },
-                Expression: &ast.VarNameExp{
-                    Token: token.Token{
-                        Literal: "abc",
-                        Type: token.IDENT,
-                        OnLine: 0,
-                        OnColumn: 8,
-                    },
-                    Name: "abc",
-                },
-            },
-        },
-    }
+	tests := []struct {
+		input     string
+		expLetSta ast.LetSta
+	}{
+		{ // test 0
+			input: "let a = 34;",
+			expLetSta: ast.LetSta{
+				Token: token.Token{
+					Literal:  "let",
+					Type:     token.LET,
+					OnLine:   0,
+					OnColumn: 0,
+				},
+				VarName: ast.VarNameExp{
+					Token: token.Token{
+						Literal:  "a",
+						Type:     token.IDENT,
+						OnLine:   0,
+						OnColumn: 4,
+					},
+					Name: "a",
+				},
+				Expression: &ast.IntConstantExp{
+					Token: token.Token{
+						Literal:  "34",
+						Type:     token.INT,
+						OnLine:   0,
+						OnColumn: 8,
+					},
+					Value: 34,
+				},
+			},
+		},
+		{ // test 1
+			input: "let a = abc;",
+			expLetSta: ast.LetSta{
+				Token: token.Token{
+					Literal:  "let",
+					Type:     token.LET,
+					OnLine:   0,
+					OnColumn: 0,
+				},
+				VarName: ast.VarNameExp{
+					Token: token.Token{
+						Literal:  "a",
+						Type:     token.IDENT,
+						OnLine:   0,
+						OnColumn: 4,
+					},
+					Name: "a",
+				},
+				Expression: &ast.VarNameExp{
+					Token: token.Token{
+						Literal:  "abc",
+						Type:     token.IDENT,
+						OnLine:   0,
+						OnColumn: 8,
+					},
+					Name: "abc",
+				},
+			},
+		},
+	}
 
-    for i, tt := range tests {
-        l := lexer.LexString(tt.input)
-        p := New(l)
-        stmt := p.parseLetStatement()
-        letSta, ok := stmt.(*ast.LetSta)
-        if !ok {
-            t.Fatalf("tests[%d]: stmt is not *ast.LetSta, got=%T", i, stmt)
-        }
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		stmt := p.parseLetStatement()
+		letSta, ok := stmt.(*ast.LetSta)
+		if !ok {
+			t.Fatalf("tests[%d]: stmt is not *ast.LetSta, got=%T", i, stmt)
+		}
 
-        if !testToken(t, tt.expLetSta.Token, letSta.Token) {
-            t.Fatalf("letSta.Token is not %+v, got=%+v", tt.expLetSta, letSta.Token)
-        }
+		if !testToken(t, tt.expLetSta.Token, letSta.Token) {
+			t.Fatalf("letSta.Token is not %+v, got=%+v", tt.expLetSta, letSta.Token)
+		}
 
-        if !testToken(t, tt.expLetSta.VarName.Token, letSta.VarName.Token) {
-            t.Fatalf("letSta.VarName.Token is not %+v, got=%+v", 
-            tt.expLetSta.VarName.Token, letSta.VarName.Token)
-        }
+		if !testToken(t, tt.expLetSta.VarName.Token, letSta.VarName.Token) {
+			t.Fatalf("letSta.VarName.Token is not %+v, got=%+v",
+				tt.expLetSta.VarName.Token, letSta.VarName.Token)
+		}
 
-        if tt.expLetSta.VarName.Name != letSta.VarName.Name {
-            t.Fatalf("letSta.VarName.Name is not %s, got=%s", 
-            tt.expLetSta.VarName.Name, letSta.VarName.Name)
-        }
-        // valueOf := reflect.ValueOf
-        // typeOf := reflect.TypeOf
+		if tt.expLetSta.VarName.Name != letSta.VarName.Name {
+			t.Fatalf("letSta.VarName.Name is not %s, got=%s",
+				tt.expLetSta.VarName.Name, letSta.VarName.Name)
+		}
+		// valueOf := reflect.ValueOf
+		// typeOf := reflect.TypeOf
 
-        if !reflect.DeepEqual(tt.expLetSta.Expression ,letSta.Expression) {
-            t.Fatalf("letSta.Expression is not %+T, got=%+T", 
-            tt.expLetSta.Expression, letSta.Expression)
-        }
-    }
+		if !reflect.DeepEqual(tt.expLetSta.Expression, letSta.Expression) {
+			t.Fatalf("letSta.Expression is not %+T, got=%+T",
+				tt.expLetSta.Expression, letSta.Expression)
+		}
+	}
 }
 
 func TestParseVarName(t *testing.T) {
-    tests := []struct {
-        input string
-        expVarName ast.VarNameExp
-    } {
-        {
-            input: "ab_c",
-            expVarName: ast.VarNameExp{
-                Token: token.Token{
-                    Literal: "ab_c",
-                    Type: token.IDENT,
-                    OnLine: 0,
-                    OnColumn: 0,
-                },
-                Name: "ab_c",
-            },
-        },
-        {
-            input: "  _b9_c",
-            expVarName: ast.VarNameExp{
-                Token: token.Token{
-                    Literal: "_b9_c",
-                    Type: token.IDENT,
-                    OnLine: 0,
-                    OnColumn: 2,
-                },
-                Name: "_b9_c",
-            },
-        },
-    }
+	tests := []struct {
+		input      string
+		expVarName ast.VarNameExp
+	}{
+		{
+			input: "ab_c",
+			expVarName: ast.VarNameExp{
+				Token: token.Token{
+					Literal:  "ab_c",
+					Type:     token.IDENT,
+					OnLine:   0,
+					OnColumn: 0,
+				},
+				Name: "ab_c",
+			},
+		},
+		{
+			input: "  _b9_c",
+			expVarName: ast.VarNameExp{
+				Token: token.Token{
+					Literal:  "_b9_c",
+					Type:     token.IDENT,
+					OnLine:   0,
+					OnColumn: 2,
+				},
+				Name: "_b9_c",
+			},
+		},
+	}
 
-    for i, tt := range tests {
-        l := lexer.LexString(tt.input)
-        p := New(l)
-        exp := p.parseVarName()
-        varName, ok := exp.(*ast.VarNameExp)
-        if !ok {
-            t.Fatalf("tests[%d]: exp is not *ast.VarNameExp, got=%T", i, exp)
-        }
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		exp := p.parseVarName()
+		varName, ok := exp.(*ast.VarNameExp)
+		if !ok {
+			t.Fatalf("tests[%d]: exp is not *ast.VarNameExp, got=%T", i, exp)
+		}
 
-        if varName.Name != tt.expVarName.Name {
-            t.Fatalf("tests[%d]: varName.Name is not %s, got=%s", i, tt.expVarName.Name, varName.Name)
-        }
+		if varName.Name != tt.expVarName.Name {
+			t.Fatalf("tests[%d]: varName.Name is not %s, got=%s", i, tt.expVarName.Name, varName.Name)
+		}
 
-        if !testToken(t, tt.expVarName.Token, varName.Token) {
-            t.Fatalf("varName.Token is not %+v, got=%+v", tt.expVarName.Token, varName.Token)
-        }
-    }
-
+		if !testToken(t, tt.expVarName.Token, varName.Token) {
+			t.Fatalf("varName.Token is not %+v, got=%+v", tt.expVarName.Token, varName.Token)
+		}
+	}
 }
 
 func TestParseInteger(t *testing.T) {
-    tests := []struct {
-        input string
-        expExpression ast.IntConstantExp 
-    }{
-        {
-            input: "345",
-            expExpression: ast.IntConstantExp{
-                Token: token.Token{
-                    Literal: "345",
-                    Type: token.INT,
-                    OnLine: 0,
-                    OnColumn: 0,
-                },
-                Value: 345,
-            },
-        },
-    }
+	tests := []struct {
+		input         string
+		expExpression ast.IntConstantExp
+	}{
+		{
+			input: "345",
+			expExpression: ast.IntConstantExp{
+				Token: token.Token{
+					Literal:  "345",
+					Type:     token.INT,
+					OnLine:   0,
+					OnColumn: 0,
+				},
+				Value: 345,
+			},
+		},
+	}
 
-    for i, tt := range tests {
-        l := lexer.LexString(tt.input)
-        p := New(l)
-        exp := p.parseExpression(LOWEST)
-        intExp, ok := exp.(*ast.IntConstantExp)
-        if !ok {
-            t.Fatalf("tests[%d]: exp, is not *ast.IntConstantExp, got=%T", i, exp)
-        }
-        if intExp.Value != tt.expExpression.Value {
-            t.Fatalf("tests[%d]: inExp.Value is not %d, got=%d", i, tt.expExpression.Value, intExp.Value)
-        }
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		intExp, ok := exp.(*ast.IntConstantExp)
+		if !ok {
+			t.Fatalf("tests[%d]: exp, is not *ast.IntConstantExp, got=%T", i, exp)
+		}
+		if intExp.Value != tt.expExpression.Value {
+			t.Fatalf("tests[%d]: inExp.Value is not %d, got=%d", i, tt.expExpression.Value, intExp.Value)
+		}
 
-        if !testToken(t, tt.expExpression.Token, intExp.Token) {
-            t.Fatalf("tests[%d]: intExp.Token is not %+v, got=%+v", i, tt.expExpression.Token, intExp.Token)
-        }
-    }
+		if !testToken(t, tt.expExpression.Token, intExp.Token) {
+			t.Fatalf("tests[%d]: intExp.Token is not %+v, got=%+v", i, tt.expExpression.Token, intExp.Token)
+		}
+	}
 }
 
 func TestVarDec(t *testing.T) {

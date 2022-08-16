@@ -13,12 +13,16 @@ import (
 	"github.com/ishwar00/JackAnalyzer/token"
 )
 
-var green = color.GreenString
-var yellow = color.YellowString
-var red = color.RedString
+var (
+	green  = color.GreenString
+	yellow = color.YellowString
+	red    = color.RedString
+)
 
-type prefixFn func() ast.Expression
-type infixFn func(ast.Expression) ast.Expression
+type (
+	prefixFn func() ast.Expression
+	infixFn  func(ast.Expression) ast.Expression
+)
 
 type Parser struct {
 	l         *lexer.Lexer
@@ -279,38 +283,38 @@ func (p *Parser) parseInteger() ast.Expression {
 }
 
 func (p *Parser) parseVarName() ast.Expression {
-    return &ast.VarNameExp{ Token: p.curToken, Name: p.curToken.Literal }
+	return &ast.VarNameExp{Token: p.curToken, Name: p.curToken.Literal}
 }
 
 func (p *Parser) parseLetStatement() ast.Statement {
-    letSta := &ast.LetSta{Token: p.curToken}
+	letSta := &ast.LetSta{Token: p.curToken}
 
-    if !p.peekTokenIs(token.IDENT) {
-        p.expectedIdentifierErr(p.peekToken)
-        p.skipToSemicolon()
-        return nil
-    }
+	if !p.peekTokenIs(token.IDENT) {
+		p.expectedIdentifierErr(p.peekToken)
+		p.skipToSemicolon()
+		return nil
+	}
 
-    p.nextToken()
-    letSta.VarName = ast.VarNameExp{
-        Token: p.curToken,
-        Name: p.curToken.Literal,
-    }
+	p.nextToken()
+	letSta.VarName = ast.VarNameExp{
+		Token: p.curToken,
+		Name:  p.curToken.Literal,
+	}
 
-    if !p.peekTokenIs(token.EQ) {
-        errMsg := "expected " + green("=") + " but got " + red(p.peekToken.Literal)
-        p.addError(errMsg, p.peekToken)
-        return nil
-    }
+	if !p.peekTokenIs(token.EQ) {
+		errMsg := "expected " + green("=") + " but got " + red(p.peekToken.Literal)
+		p.addError(errMsg, p.peekToken)
+		return nil
+	}
 
-    p.nextToken()
-    p.nextToken()
-    exp := p.parseExpression(LOWEST)
-    if exp != nil && !reflect.ValueOf(exp).IsZero() {
-        letSta.Expression = exp
-        return letSta
-    }
-    return nil 
+	p.nextToken()
+	p.nextToken()
+	exp := p.parseExpression(LOWEST)
+	if exp != nil && !reflect.ValueOf(exp).IsZero() {
+		letSta.Expression = exp
+		return letSta
+	}
+	return nil
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
@@ -330,12 +334,8 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		leftExp = infix(leftExp)
 	}
 
-    if p.peekTokenIs(token.SEMICO) {
-        p.nextToken()
-    }
+	if p.peekTokenIs(token.SEMICO) {
+		p.nextToken()
+	}
 	return leftExp
 }
-
-
-
-
