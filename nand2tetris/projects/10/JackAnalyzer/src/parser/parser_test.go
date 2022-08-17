@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -8,6 +9,285 @@ import (
 	"github.com/ishwar00/JackAnalyzer/lexer"
 	"github.com/ishwar00/JackAnalyzer/token"
 )
+
+func TestSubroutineCall(t *testing.T) {
+	tests := []struct {
+		input            string
+		expSubroutineExp ast.Expression
+	}{
+		{
+			input: "subName()",
+			expSubroutineExp: &ast.InfixExp{
+				Token: token.Token{
+					Literal:  "(",
+					Type:     token.LPAREN,
+					OnColumn: 7,
+				},
+				Left: &ast.IdentifierExp{
+					Token: token.Token{
+						Literal: "subName",
+						Type:    token.IDENT,
+					},
+					Value: "subName",
+				},
+			},
+		},
+		{
+			input: "Subroutine(3, 45, asd)",
+			expSubroutineExp: &ast.InfixExp{
+				Token: token.Token{
+					Literal:  "(",
+					Type:     token.LPAREN,
+					OnColumn: 10,
+				},
+				Left: &ast.IdentifierExp{
+					Token: token.Token{
+						Literal: "Subroutine",
+						Type:    token.IDENT,
+					},
+					Value: "Subroutine",
+				},
+				Right: &ast.ExpressionListExp{
+					Token: token.Token{
+						Literal:  "3",
+						Type:     token.INT,
+						OnColumn: 11,
+					},
+					Expressions: []ast.Expression{
+						&ast.IntConstExp{
+							Token: token.Token{
+								Literal:  "3",
+								Type:     token.INT,
+								OnColumn: 11,
+							},
+							Value: 3,
+						},
+						&ast.IntConstExp{
+							Token: token.Token{
+								Literal:  "45",
+								Type:     token.INT,
+								OnColumn: 14,
+							},
+							Value: 45,
+						},
+						&ast.IdentifierExp{
+							Token: token.Token{
+								Literal:  "asd",
+								Type:     token.IDENT,
+								OnColumn: 18,
+							},
+							Value: "asd",
+						},
+					},
+				},
+			},
+		},
+		{
+			input: "subName()",
+			expSubroutineExp: &ast.InfixExp{
+				Token: token.Token{
+					Literal:  "(",
+					Type:     token.LPAREN,
+					OnColumn: 7,
+				},
+				Left: &ast.IdentifierExp{
+					Token: token.Token{
+						Literal: "subName",
+						Type:    token.IDENT,
+					},
+					Value: "subName",
+				},
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if !reflect.DeepEqual(exp, tt.expSubroutineExp) {
+			t.Fatalf("tests[%d]: exp is not %+v, got=%+v", i, tt.expSubroutineExp, exp)
+		}
+	}
+}
+
+func TestExpressionList(t *testing.T) {
+	tests := []struct {
+		input      string
+		expExpList ast.ExpressionListExp
+	}{
+		{
+			input: "2",
+			expExpList: ast.ExpressionListExp{
+				Token: token.Token{
+					Literal: "2",
+					Type:    token.INT,
+				},
+				Expressions: []ast.Expression{
+					&ast.IntConstExp{
+						Token: token.Token{
+							Literal: "2",
+							Type:    token.INT,
+						},
+						Value: 2,
+					},
+				},
+			},
+		},
+		{
+			input: "2, 3, 4",
+			expExpList: ast.ExpressionListExp{
+				Token: token.Token{
+					Literal: "2",
+					Type:    token.INT,
+				},
+				Expressions: []ast.Expression{
+					&ast.IntConstExp{
+						Token: token.Token{
+							Literal: "2",
+							Type:    token.INT,
+						},
+						Value: 2,
+					},
+					&ast.IntConstExp{
+						Token: token.Token{
+							Literal:  "3",
+							Type:     token.INT,
+							OnColumn: 3,
+						},
+						Value: 3,
+					},
+					&ast.IntConstExp{
+						Token: token.Token{
+							Literal:  "4",
+							Type:     token.INT,
+							OnColumn: 6,
+						},
+						Value: 4,
+					},
+				},
+			},
+		},
+		{
+			input: "a, 3, \"d__f\"",
+			expExpList: ast.ExpressionListExp{
+				Token: token.Token{
+					Literal: "a",
+					Type:    token.IDENT,
+				},
+				Expressions: []ast.Expression{
+					&ast.IdentifierExp{
+						Token: token.Token{
+							Literal: "a",
+							Type:    token.IDENT,
+						},
+						Value: "a",
+					},
+					&ast.IntConstExp{
+						Token: token.Token{
+							Literal:  "3",
+							Type:     token.INT,
+							OnColumn: 3,
+						},
+						Value: 3,
+					},
+					&ast.StrConstExp{
+						Token: token.Token{
+							Literal:  "d__f",
+							Type:     token.STR_CONST,
+							OnColumn: 7,
+						},
+						Value: "d__f",
+					},
+				},
+			},
+		},
+	}
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		exp := p.parseExpressionList()
+		expList, ok := exp.(*ast.ExpressionListExp)
+		if !ok {
+			t.Fatalf("tests[%d]: exp is not *ast.ExpressionListExp, got=%T", i, exp)
+		}
+
+		if expList.Token != tt.expExpList.Token {
+			t.Fatalf("expList.Token is not %+v, got=%+v",
+				tt.expExpList.Token, expList.Token)
+		}
+
+		for j, exp := range expList.Expressions {
+			if !reflect.DeepEqual(exp, tt.expExpList.Expressions[j]) {
+				t.Fatalf("tests[%d]: exp[%d], is not %+v, got=%+v",
+					i, j, tt.expExpList.Expressions[j], exp)
+			}
+		}
+	}
+}
+
+func TestArrayIndex(t *testing.T) {
+	tests := []struct {
+		input         string
+		expArrayIndex ast.InfixExp
+	}{
+		{
+			input: "arr[343]",
+			expArrayIndex: ast.InfixExp{
+				Token: token.Token{
+					Literal:  "[",
+					Type:     token.LBRACK,
+					OnLine:   0,
+					OnColumn: 3,
+				},
+				Left: &ast.IdentifierExp{
+					Token: token.Token{
+						Literal:  "arr",
+						Type:     token.IDENT,
+						OnLine:   0,
+						OnColumn: 0,
+					},
+					Value: "arr",
+				},
+				Right: &ast.IntConstExp{
+					Token: token.Token{
+						Literal:  "343",
+						Type:     token.INT,
+						OnLine:   0,
+						OnColumn: 4,
+					},
+					Value: 343,
+				},
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+
+		exp := p.parseExpression(LOWEST)
+		arrExp, ok := exp.(*ast.InfixExp)
+		if !ok {
+			t.Fatalf("tests[%d]: arrExp is not *ast.ArrayIndexExp, got=%T", i, exp)
+		}
+
+		if arrExp.Token != tt.expArrayIndex.Token {
+			t.Fatalf("tests[%d]: arrExp.Token is not %+v, got=%+v",
+				i, tt.expArrayIndex.Token, arrExp.Token)
+		}
+
+		if !reflect.DeepEqual(arrExp.Left, tt.expArrayIndex.Left) {
+			t.Fatalf("tests[%d]: arrExp.VarName is not %+v, got=%+v",
+				i, tt.expArrayIndex.Left, arrExp.Left)
+		}
+
+		if !reflect.DeepEqual(arrExp.Right, tt.expArrayIndex.Right) {
+			t.Fatalf("tests[%d]: arrExp.Index is not %+v, got=%+v",
+				i, tt.expArrayIndex.Right, arrExp.Right)
+		}
+	}
+}
 
 func TestReturnSta(t *testing.T) {
 	tests := []struct {
@@ -34,7 +314,7 @@ func TestReturnSta(t *testing.T) {
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				Expression: &ast.IntConstantExp{
+				Expression: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "34",
 						Type:     token.INT,
@@ -82,7 +362,7 @@ func TestWhileSta(t *testing.T) {
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				Condition: &ast.IntConstantExp{
+				Condition: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "343",
 						Type:     token.INT,
@@ -110,14 +390,14 @@ func TestWhileSta(t *testing.T) {
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				Condition: &ast.VarNameExp{
+				Condition: &ast.IdentifierExp{
 					Token: token.Token{
 						Literal:  "abc",
 						Type:     token.IDENT,
 						OnLine:   0,
 						OnColumn: 6,
 					},
-					Name: "abc",
+					Value: "abc",
 				},
 				Statements: &ast.StatementBlockSta{
 					Token: token.Token{
@@ -134,23 +414,23 @@ func TestWhileSta(t *testing.T) {
 								OnLine:   0,
 								OnColumn: 13,
 							},
-							VarName: ast.VarNameExp{
+							VarName: ast.IdentifierExp{
 								Token: token.Token{
 									Literal:  "deep",
 									Type:     token.IDENT,
 									OnLine:   0,
 									OnColumn: 17,
 								},
-								Name: "deep",
+								Value: "deep",
 							},
-							Expression: &ast.VarNameExp{
+							Expression: &ast.IdentifierExp{
 								Token: token.Token{
 									Literal:  "source",
 									Type:     token.IDENT,
 									OnLine:   0,
 									OnColumn: 24,
 								},
-								Name: "source",
+								Value: "source",
 							},
 						},
 					},
@@ -206,16 +486,16 @@ func TestStatementBlock(t *testing.T) {
 							OnLine:   0,
 							OnColumn: 2,
 						},
-						VarName: ast.VarNameExp{
+						VarName: ast.IdentifierExp{
 							Token: token.Token{
 								Literal:  "a",
 								Type:     token.IDENT,
 								OnLine:   0,
 								OnColumn: 6,
 							},
-							Name: "a",
+							Value: "a",
 						},
-						Expression: &ast.IntConstantExp{
+						Expression: &ast.IntConstExp{
 							Token: token.Token{
 								Literal:  "345",
 								Type:     token.INT,
@@ -232,23 +512,23 @@ func TestStatementBlock(t *testing.T) {
 							OnLine:   0,
 							OnColumn: 15,
 						},
-						VarName: ast.VarNameExp{
+						VarName: ast.IdentifierExp{
 							Token: token.Token{
 								Literal:  "a_b",
 								Type:     token.IDENT,
 								OnLine:   0,
 								OnColumn: 19,
 							},
-							Name: "a_b",
+							Value: "a_b",
 						},
-						Expression: &ast.VarNameExp{
+						Expression: &ast.IdentifierExp{
 							Token: token.Token{
 								Literal:  "abc",
 								Type:     token.IDENT,
 								OnLine:   0,
 								OnColumn: 25,
 							},
-							Name: "abc",
+							Value: "abc",
 						},
 					},
 				},
@@ -291,7 +571,7 @@ func TestIfElseSta(t *testing.T) {
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				Condition: &ast.IntConstantExp{
+				Condition: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "343",
 						Type:     token.INT,
@@ -319,14 +599,14 @@ func TestIfElseSta(t *testing.T) {
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				Condition: &ast.VarNameExp{
+				Condition: &ast.IdentifierExp{
 					Token: token.Token{
 						Literal:  "abc",
 						Type:     token.IDENT,
 						OnLine:   0,
 						OnColumn: 3,
 					},
-					Name: "abc",
+					Value: "abc",
 				},
 				Then: &ast.StatementBlockSta{
 					Token: token.Token{
@@ -343,16 +623,16 @@ func TestIfElseSta(t *testing.T) {
 								OnLine:   0,
 								OnColumn: 9,
 							},
-							VarName: ast.VarNameExp{
+							VarName: ast.IdentifierExp{
 								Token: token.Token{
 									Literal:  "hey",
 									Type:     token.IDENT,
 									OnLine:   0,
 									OnColumn: 13,
 								},
-								Name: "hey",
+								Value: "hey",
 							},
-							Expression: &ast.IntConstantExp{
+							Expression: &ast.IntConstExp{
 								Token: token.Token{
 									Literal:  "34",
 									Type:     token.INT,
@@ -375,14 +655,14 @@ func TestIfElseSta(t *testing.T) {
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				Condition: &ast.VarNameExp{
+				Condition: &ast.IdentifierExp{
 					Token: token.Token{
 						Literal:  "abc",
 						Type:     token.IDENT,
 						OnLine:   0,
 						OnColumn: 3,
 					},
-					Name: "abc",
+					Value: "abc",
 				},
 				Then: &ast.StatementBlockSta{
 					Token: token.Token{
@@ -399,16 +679,16 @@ func TestIfElseSta(t *testing.T) {
 								OnLine:   0,
 								OnColumn: 9,
 							},
-							VarName: ast.VarNameExp{
+							VarName: ast.IdentifierExp{
 								Token: token.Token{
 									Literal:  "hey",
 									Type:     token.IDENT,
 									OnLine:   0,
 									OnColumn: 13,
 								},
-								Name: "hey",
+								Value: "hey",
 							},
-							Expression: &ast.IntConstantExp{
+							Expression: &ast.IntConstExp{
 								Token: token.Token{
 									Literal:  "34",
 									Type:     token.INT,
@@ -435,16 +715,16 @@ func TestIfElseSta(t *testing.T) {
 								OnLine:   0,
 								OnColumn: 32,
 							},
-							VarName: ast.VarNameExp{
+							VarName: ast.IdentifierExp{
 								Token: token.Token{
 									Literal:  "yo",
 									Type:     token.IDENT,
 									OnLine:   0,
 									OnColumn: 36,
 								},
-								Name: "yo",
+								Value: "yo",
 							},
-							Expression: &ast.IntConstantExp{
+							Expression: &ast.IntConstExp{
 								Token: token.Token{
 									Literal:  "3",
 									Type:     token.INT,
@@ -506,16 +786,16 @@ func TestLetStatement(t *testing.T) {
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				VarName: ast.VarNameExp{
+				VarName: ast.IdentifierExp{
 					Token: token.Token{
 						Literal:  "a",
 						Type:     token.IDENT,
 						OnLine:   0,
 						OnColumn: 4,
 					},
-					Name: "a",
+					Value: "a",
 				},
-				Expression: &ast.IntConstantExp{
+				Expression: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "34",
 						Type:     token.INT,
@@ -535,23 +815,23 @@ func TestLetStatement(t *testing.T) {
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				VarName: ast.VarNameExp{
+				VarName: ast.IdentifierExp{
 					Token: token.Token{
 						Literal:  "a",
 						Type:     token.IDENT,
 						OnLine:   0,
 						OnColumn: 4,
 					},
-					Name: "a",
+					Value: "a",
 				},
-				Expression: &ast.VarNameExp{
+				Expression: &ast.IdentifierExp{
 					Token: token.Token{
 						Literal:  "abc",
 						Type:     token.IDENT,
 						OnLine:   0,
 						OnColumn: 8,
 					},
-					Name: "abc",
+					Value: "abc",
 				},
 			},
 		},
@@ -564,16 +844,16 @@ func TestLetStatement(t *testing.T) {
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				VarName: ast.VarNameExp{
+				VarName: ast.IdentifierExp{
 					Token: token.Token{
 						Literal:  "a",
 						Type:     token.IDENT,
 						OnLine:   0,
 						OnColumn: 4,
 					},
-					Name: "a",
+					Value: "a",
 				},
-				Index: &ast.IntConstantExp{
+				Index: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "3",
 						Type:     token.INT,
@@ -582,7 +862,7 @@ func TestLetStatement(t *testing.T) {
 					},
 					Value: 3,
 				},
-				Expression: &ast.IntConstantExp{
+				Expression: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "34",
 						Type:     token.INT,
@@ -613,9 +893,9 @@ func TestLetStatement(t *testing.T) {
 				tt.expLetSta.VarName.Token, letSta.VarName.Token)
 		}
 
-		if tt.expLetSta.VarName.Name != letSta.VarName.Name {
+		if tt.expLetSta.VarName.Value != letSta.VarName.Value {
 			t.Fatalf("letSta.VarName.Name is not %s, got=%s",
-				tt.expLetSta.VarName.Name, letSta.VarName.Name)
+				tt.expLetSta.VarName.Value, letSta.VarName.Value)
 		}
 
 		if !reflect.DeepEqual(letSta.Index, tt.expLetSta.Index) {
@@ -632,30 +912,30 @@ func TestLetStatement(t *testing.T) {
 func TestParseVarName(t *testing.T) {
 	tests := []struct {
 		input      string
-		expVarName ast.VarNameExp
+		expVarName ast.IdentifierExp
 	}{
 		{
 			input: "ab_c",
-			expVarName: ast.VarNameExp{
+			expVarName: ast.IdentifierExp{
 				Token: token.Token{
 					Literal:  "ab_c",
 					Type:     token.IDENT,
 					OnLine:   0,
 					OnColumn: 0,
 				},
-				Name: "ab_c",
+				Value: "ab_c",
 			},
 		},
 		{
 			input: "  _b9_c",
-			expVarName: ast.VarNameExp{
+			expVarName: ast.IdentifierExp{
 				Token: token.Token{
 					Literal:  "_b9_c",
 					Type:     token.IDENT,
 					OnLine:   0,
 					OnColumn: 2,
 				},
-				Name: "_b9_c",
+				Value: "_b9_c",
 			},
 		},
 	}
@@ -663,14 +943,14 @@ func TestParseVarName(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.LexString(tt.input)
 		p := New(l)
-		exp := p.parseVarName()
-		varName, ok := exp.(*ast.VarNameExp)
+		exp := p.parseIdentifierExp()
+		varName, ok := exp.(*ast.IdentifierExp)
 		if !ok {
-			t.Fatalf("tests[%d]: exp is not *ast.VarNameExp, got=%T", i, exp)
+			t.Fatalf("tests[%d]: exp is not *ast.IdentifierExp, got=%T", i, exp)
 		}
 
-		if varName.Name != tt.expVarName.Name {
-			t.Fatalf("tests[%d]: varName.Name is not %s, got=%s", i, tt.expVarName.Name, varName.Name)
+		if varName.Value != tt.expVarName.Value {
+			t.Fatalf("tests[%d]: varName.Value is not %s, got=%s", i, tt.expVarName.Value, varName.Value)
 		}
 
 		if tt.expVarName.Token != varName.Token {
@@ -679,14 +959,14 @@ func TestParseVarName(t *testing.T) {
 	}
 }
 
-func TestParseInteger(t *testing.T) {
+func TestParseConstant(t *testing.T) {
 	tests := []struct {
 		input         string
-		expExpression ast.IntConstantExp
+		expExpression ast.Expression
 	}{
 		{
 			input: "345",
-			expExpression: ast.IntConstantExp{
+			expExpression: &ast.IntConstExp{
 				Token: token.Token{
 					Literal:  "345",
 					Type:     token.INT,
@@ -696,22 +976,39 @@ func TestParseInteger(t *testing.T) {
 				Value: 345,
 			},
 		},
+		{
+			input: "\"strconstant\"",
+			expExpression: &ast.StrConstExp{
+				Token: token.Token{
+					Literal:  "strconstant",
+					Type:     token.STR_CONST,
+					OnLine:   0,
+					OnColumn: 1,
+				},
+				Value: "strconstant",
+			},
+		},
+		{
+			input: "this",
+			expExpression: &ast.KeywordConstExp{
+				Token: token.Token{
+					Literal:  "this",
+					Type:     token.THIS,
+					OnLine:   0,
+					OnColumn: 0,
+				},
+				Value: "this",
+			},
+		},
 	}
 
 	for i, tt := range tests {
 		l := lexer.LexString(tt.input)
 		p := New(l)
 		exp := p.parseExpression(LOWEST)
-		intExp, ok := exp.(*ast.IntConstantExp)
-		if !ok {
-			t.Fatalf("tests[%d]: exp, is not *ast.IntConstantExp, got=%T", i, exp)
-		}
-		if intExp.Value != tt.expExpression.Value {
-			t.Fatalf("tests[%d]: inExp.Value is not %d, got=%d", i, tt.expExpression.Value, intExp.Value)
-		}
-
-		if tt.expExpression.Token != intExp.Token {
-			t.Fatalf("tests[%d]: intExp.Token is not %+v, got=%+v", i, tt.expExpression.Token, intExp.Token)
+		if !reflect.DeepEqual(exp, tt.expExpression) {
+			fmt.Printf("%+v, %+v", reflect.ValueOf(exp), reflect.ValueOf(tt.expExpression))
+			t.Fatalf("tests[%d]: exp is not %+v, got=%+v", i, exp, tt.expExpression)
 		}
 	}
 }

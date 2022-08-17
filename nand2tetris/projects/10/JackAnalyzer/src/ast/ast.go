@@ -3,7 +3,6 @@ package ast
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 
 	"github.com/ishwar00/JackAnalyzer/token"
 )
@@ -37,25 +36,32 @@ type Expression interface {
 	expressionNode()
 }
 
-type IdentifierDec struct {
-	Token    token.Token
-	Literal  string      // yeah, it is literal, Literal == Token.Literal
-	DataType token.Token // dataType of data referred by identifier
+type IdentifierExp struct {
+	Token token.Token
+	Value string
 }
 
-func (i *IdentifierDec) GetToken() token.Token { return i.Token }
-func (i *IdentifierDec) String() string        { return i.Token.Literal }
-func (i *IdentifierDec) DefinitionNode()       {}
+func (i *IdentifierExp) expressionNode() {}
+
+func (i *IdentifierExp) GetToken() token.Token { return i.Token }
+
+func (i *IdentifierExp) String() string {
+	if i == nil {
+		return ""
+	}
+	return i.Value
+}
 
 // static|field|var type varName1, varName2 ... ;
 type VarDec struct {
 	Token          token.Token // var, static, field
-	DataType       token.Token // int, boolean, char, Array, Ball
-	IdentifierDecs []*IdentifierDec
+	DataType       token.Token // int, boolean, char, Array, Ball etc
+	IdentifierExps []*IdentifierExp
 }
 
+func (vd *VarDec) declarationNode() {}
+
 func (vd *VarDec) GetToken() token.Token { return vd.Token }
-func (vd *VarDec) declarationNode()      {}
 
 func (vd *VarDec) String() string {
 	if vd == nil {
@@ -63,15 +69,15 @@ func (vd *VarDec) String() string {
 	}
 
 	var out bytes.Buffer
+	space := " "
 
-	buf := fmt.Sprintf("%s %s ", vd.Token.Literal, vd.DataType.Literal)
-	out.WriteString(buf)
+	out.WriteString(vd.Token.Literal + space)
+	out.WriteString(vd.DataType.Literal + space)
 
-	for i, varName := range vd.IdentifierDecs {
-		buf = fmt.Sprintf("%s: %s", varName.Literal, varName.DataType.Literal)
-		out.WriteString(buf)
-		if i+1 < len(vd.IdentifierDecs) {
-			out.WriteString(", ")
+	for i, identifier := range vd.IdentifierExps {
+		out.WriteString(identifier.String())
+		if i+1 < len(vd.IdentifierExps) {
+			out.WriteString(",")
 		}
 	}
 	out.WriteString(";")
@@ -85,7 +91,8 @@ type ClassDec struct {
 }
 
 func (cd *ClassDec) GetToken() token.Token { return cd.Token }
-func (cd *ClassDec) declarationNode()      {}
+
+func (cd *ClassDec) declarationNode() {}
 
 func (cs *ClassDec) String() string {
 	if cs == nil {
@@ -100,49 +107,31 @@ func (cs *ClassDec) String() string {
 	for _, varDec := range cs.ClassVarDecs {
 		out.WriteString(tab + varDec.String() + "\n")
 	}
-	out.WriteString("}")
+	out.WriteString("\n}")
 
 	return out.String()
 }
 
-type IntConstantExp struct {
+type IntConstExp struct {
 	Token token.Token
-	Value int16
+	Value int64
 }
 
-func (i *IntConstantExp) expressionNode() {}
+func (i *IntConstExp) expressionNode() {}
 
-func (i *IntConstantExp) String() string {
+func (i *IntConstExp) String() string {
 	if i == nil {
 		return ""
 	}
 	return i.Token.Literal
 }
 
-func (i *IntConstantExp) GetToken() token.Token { return i.Token }
-
-type VarNameExp struct {
-	Token      token.Token
-	Name       string
-	Expression Expression
-}
-
-func (v *VarNameExp) expressionNode() {}
-
-func (v *VarNameExp) String() string {
-	if v == nil {
-		return ""
-	}
-	return v.Name
-}
-
-func (v *VarNameExp) GetToken() token.Token { return v.Token }
+func (i *IntConstExp) GetToken() token.Token { return i.Token }
 
 // let varName ('[' Index ']')? = Expression
 type LetSta struct {
 	Token      token.Token // let
-	VarName    VarNameExp
-	Index      Expression
+	Name       Expression  // IdentifierExp, InfixExpression
 	Expression Expression
 }
 
@@ -157,10 +146,7 @@ func (l *LetSta) String() string {
 
 	var out bytes.Buffer
 
-	out.WriteString("let " + l.VarName.Name)
-	if l.Index != nil && !reflect.ValueOf(l.Index).IsZero() {
-		out.WriteString("[" + l.Index.String() + "]")
-	}
+	out.WriteString("let " + l.Name.String())
 	out.WriteString("=" + l.Expression.String() + ";")
 
 	return out.String()
@@ -183,9 +169,7 @@ func (sb *StatementBlockSta) String() string {
 	var out bytes.Buffer
 
 	for _, stmt := range sb.Statements {
-		if stmt != nil && !reflect.ValueOf(stmt).IsZero() {
-			out.WriteString(stmt.String() + "\n")
-		}
+		out.WriteString(stmt.String() + "\n")
 	}
 	return out.String()
 }
@@ -212,13 +196,14 @@ func (ie *IfElseSta) String() string {
 	}
 
 	var out bytes.Buffer
+	tab := "    "
 
 	out.WriteString("if(" + ie.Condition.String() + ") {\n")
-	out.WriteString(ie.Then.String() + "\n} ")
+	out.WriteString(tab + ie.Then.String())
 	if ie.Else != nil {
-		out.WriteString("else {\n" + ie.Else.String())
-		out.WriteString("\n}")
+		out.WriteString("\n} else {\n" + tab + ie.Else.String())
 	}
+	out.WriteString("\n}\n")
 	return out.String()
 }
 
@@ -238,10 +223,11 @@ func (ws *WhileSta) String() string {
 	}
 
 	var out bytes.Buffer
+	tab := "    "
 
 	out.WriteString("while(" + ws.Condition.String() + ") {\n")
-	out.WriteString(ws.Statements.String())
-	out.WriteString("\n}")
+	out.WriteString(tab + ws.Statements.String())
+	out.WriteString("\n}\n")
 
 	return out.String()
 }
@@ -261,10 +247,98 @@ func (r *ReturnSta) String() string {
 	}
 
 	var out bytes.Buffer
-	out.WriteString("return ")
-	if r.Expression != nil {
-		out.WriteString(r.Expression.String())
+	out.WriteString("return " + r.Expression.String() + ";")
+	return out.String()
+}
+
+type PrefixExp struct {
+	Token    token.Token
+	Operator string
+	Right    Expression
+}
+
+func (p *PrefixExp) expressionNode() {}
+
+func (p *PrefixExp) GetToken() token.Token { return p.Token }
+
+func (p *PrefixExp) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(p.Operator)
+	out.WriteString(p.Right.String())
+	return out.String()
+}
+
+type InfixExp struct {
+	Token    token.Token
+	Left     Expression
+	Operator string
+	Right    Expression
+}
+
+func (i *InfixExp) expressionNode() {}
+
+func (i *InfixExp) GetToken() token.Token { return i.Token }
+
+func (i *InfixExp) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(i.Left.String())
+	out.WriteString(i.Operator)
+	out.WriteString(i.Right.String())
+
+	return out.String()
+}
+
+type StrConstExp struct {
+	Token token.Token
+	Value string
+}
+
+func (s *StrConstExp) expressionNode() {}
+
+func (s *StrConstExp) GetToken() token.Token { return s.Token }
+
+func (s *StrConstExp) String() string {
+	if s == nil {
+		return ""
 	}
-	out.WriteString(";")
+	return s.Value
+}
+
+type KeywordConstExp struct {
+	Token token.Token
+	Value string
+}
+
+func (k *KeywordConstExp) expressionNode() {}
+
+func (k *KeywordConstExp) GetToken() token.Token { return k.Token }
+
+func (k *KeywordConstExp) String() string {
+	if k == nil {
+		return ""
+	}
+	return k.Value
+}
+
+type ExpressionListExp struct {
+	Token       token.Token // first token of first expression
+	Expressions []Expression
+}
+
+func (el *ExpressionListExp) expressionNode() {}
+
+func (el *ExpressionListExp) GetToken() token.Token { return el.Token }
+
+func (el *ExpressionListExp) String() string {
+	var out bytes.Buffer
+
+	for i, exp := range el.Expressions {
+		out.WriteString(exp.String())
+		if i+1 < len(el.Expressions) {
+			out.WriteString(",")
+		}
+	}
 	return out.String()
 }
