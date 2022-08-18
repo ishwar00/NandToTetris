@@ -360,7 +360,7 @@ func (p *Parser) parseIdentifierExp() ast.Expression {
 }
 
 // let Name ('[' Index ']')? = Expression
-func (p *Parser) parseLetStatement() ast.Statement {
+func (p *Parser) parseLetStatement() *ast.LetSta {
 	letSta := &ast.LetSta{
 		Token: p.curToken, // let
 	}
@@ -626,7 +626,6 @@ func (p *Parser) parseExpressionList(skipTo ...token.TokenType) ast.Expression {
 		p.nextToken()
 		p.nextToken()
 		exp := p.parseExpression(LOWEST)
-		fmt.Println(exp)
 		if exp != nil && !reflect.ValueOf(exp).IsZero() {
 			expList.Expressions = append(expList.Expressions, exp)
 		} else {

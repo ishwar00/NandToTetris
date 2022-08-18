@@ -78,6 +78,7 @@ func (e ErrHandler) ReportAll() {
 	}
 }
 
+// TODO: do better with implementation
 /* why errs is a slice?: there can be mulitple errors
 with same message on a single line */
 func report(line string, errs []Error) {
