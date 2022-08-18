@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -8,6 +9,313 @@ import (
 	"github.com/ishwar00/JackAnalyzer/lexer"
 	"github.com/ishwar00/JackAnalyzer/token"
 )
+
+func TestArithmeticExp(t *testing.T) {
+	tests := []struct {
+		input         string
+		expExpression string
+	}{
+		{
+			"-a * b",
+			"((-a)*b)",
+		},
+		{
+			"~-a",
+			"(~(-a))",
+		},
+		{
+			"a + b + c",
+			"((a+b)+c)",
+		},
+		{
+			"a + b - c",
+			"((a+b)-c)",
+		},
+		{
+			"a * b * c",
+			"((a*b)*c)",
+		},
+		{
+			"a * b / c",
+			"((a*b)/c)",
+		},
+		{
+			"a + b / c",
+			"(a+(b/c))",
+		},
+		{
+			"a + b * c + d / e - f",
+			"(((a+(b*c))+(d/e))-f)",
+		},
+		{
+			"5>4 = 3<4",
+			"((5>4)=(3<4))",
+		},
+		{
+			"3 + 4 * 5 = 3 * 1 + 4 * 5",
+			"((3+(4*5))=((3*1)+(4*5)))",
+		},
+		{
+			"true",
+			"true",
+		},
+		{
+			"false",
+			"false",
+		},
+		{
+			"3>5 = false",
+			"((3>5)=false)",
+		},
+		{
+			"3 < 5 = true",
+			"((3<5)=true)",
+		},
+		{
+			"1 + (2 +3) + 4",
+			"((1+(2+3))+4)",
+		},
+		{
+			"(5 + 5) * 2",
+			"((5+5)*2)",
+		},
+		{
+			"2 / (5 + 5)",
+			"(2/(5+5))",
+		},
+		{
+			"(5 + 5) * 2 * (5 + 5)",
+			"(((5+5)*2)*(5+5))",
+		},
+		{
+			"-(5 + 5)",
+			"(-(5+5))",
+		},
+		{
+			"~(true = true)",
+			"(~(true=true))",
+		},
+		{
+			"a + add(b * c) + d",
+			"((a+(add((b*c))))+d)",
+		},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"(add(a,b,1,(2*3),(4+5),(add(6,(7*8)))))",
+		},
+		{
+			"add(a + b + c * d / f + g)",
+			"(add((((a+b)+((c*d)/f))+g)))",
+		},
+		{
+			"add(arr[0], \"str\", varName, call(A[index]))",
+			"(add((arr[0]),str,varName,(call((A[index])))))",
+		},
+	}
+
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if exp.String() != tt.expExpression {
+			t.Fatalf("tests[%d]: exp is not %+v, got=%+v", i, tt.expExpression, exp.String())
+		}
+	}
+}
+
+func TestGroupExp(t *testing.T) {
+	tests := []struct {
+		input         string
+		expExpression ast.Expression
+	}{
+		{
+			input: "(hey)",
+			expExpression: &ast.IdentifierExp{
+				Token: token.Token{
+					Literal:  "hey",
+					Type:     token.IDENT,
+					OnColumn: 1,
+				},
+				Value: "hey",
+			},
+		},
+		{
+			input: "((hey))",
+			expExpression: &ast.IdentifierExp{
+				Token: token.Token{
+					Literal:  "hey",
+					Type:     token.IDENT,
+					OnColumn: 2,
+				},
+				Value: "hey",
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+
+		exp := p.parseExpression(LOWEST)
+
+		if exp == nil || reflect.ValueOf(exp).IsZero() {
+			t.Fatalf("tests[%d]: exp is nil", i)
+		}
+
+		if !reflect.DeepEqual(exp, tt.expExpression) {
+			t.Fatalf("tests[%d]: exp is not %+v, got=%+v", i, exp, tt.expExpression)
+		}
+	}
+}
+
+func TestMethodCall(t *testing.T) {
+	tests := []struct {
+		input    string
+		expInfix ast.Expression
+	}{
+		{
+			input: "varName.mCall()",
+			expInfix: &ast.InfixExp{
+				Token: token.Token{
+					Literal:  "(",
+					Type:     token.LPAREN,
+					OnColumn: 13,
+				},
+				Left: &ast.InfixExp{
+					Token: token.Token{
+						Literal:  ".",
+						Type:     token.PERIOD,
+						OnColumn: 7,
+					},
+					Left: &ast.IdentifierExp{
+						Token: token.Token{
+							Literal: "varName",
+							Type:    token.IDENT,
+						},
+						Value: "varName",
+					},
+					Operator: ".",
+					Right: &ast.IdentifierExp{
+						Token: token.Token{
+							Literal:  "mCall",
+							Type:     token.IDENT,
+							OnColumn: 8,
+						},
+						Value: "mCall",
+					},
+				},
+				Operator: "(",
+			},
+		},
+		{
+			input: "foo.bar(4, hey(hi, 9))",
+			expInfix: &ast.InfixExp{
+				Token: token.Token{
+					Literal:  "(",
+					Type:     token.LPAREN,
+					OnColumn: 7,
+				},
+				Left: &ast.InfixExp{
+					Token: token.Token{
+						Literal:  ".",
+						Type:     token.PERIOD,
+						OnColumn: 3,
+					},
+					Left: &ast.IdentifierExp{
+						Token: token.Token{
+							Literal: "foo",
+							Type:    token.IDENT,
+						},
+						Value: "foo",
+					},
+					Operator: ".",
+					Right: &ast.IdentifierExp{
+						Token: token.Token{
+							Literal:  "bar",
+							Type:     token.IDENT,
+							OnColumn: 4,
+						},
+						Value: "bar",
+					},
+				},
+				Operator: "(",
+				Right: &ast.ExpressionListExp{
+					Token: token.Token{
+						Literal:  "4",
+						Type:     token.INT,
+						OnColumn: 8,
+					},
+					Expressions: []ast.Expression{
+						&ast.IntConstExp{
+							Token: token.Token{
+								Literal:  "4",
+								Type:     token.INT,
+								OnColumn: 8,
+							},
+							Value: 4,
+						},
+						&ast.InfixExp{
+							Token: token.Token{
+								Literal:  "(",
+								Type:     token.LPAREN,
+								OnColumn: 14,
+							},
+							Left: &ast.IdentifierExp{
+								Token: token.Token{
+									Literal:  "hey",
+									Type:     token.IDENT,
+									OnColumn: 11,
+								},
+								Value: "hey",
+							},
+							Operator: "(",
+							Right: &ast.ExpressionListExp{
+								Token: token.Token{
+									Literal:  "hi",
+									Type:     token.IDENT,
+									OnColumn: 15,
+								},
+								Expressions: []ast.Expression{
+									&ast.IdentifierExp{
+										Token: token.Token{
+											Literal:  "hi",
+											Type:     token.IDENT,
+											OnColumn: 15,
+										},
+										Value: "hi",
+									},
+									&ast.IntConstExp{
+										Token: token.Token{
+											Literal:  "9",
+											Type:     token.INT,
+											OnColumn: 19,
+										},
+										Value: 9,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+
+		if exp == nil || reflect.ValueOf(exp).IsZero() {
+			t.Fatalf("tests[%d]: exp is nil", i)
+		}
+
+		if !reflect.DeepEqual(exp, tt.expInfix) {
+			fmt.Printf("last %+v\n", p.curToken)
+			t.Fatalf("tests[%d]: exp is not %+v, got=%+v", i, tt.expInfix, exp)
+		}
+	}
+}
 
 func TestSubroutineCall(t *testing.T) {
 	tests := []struct {

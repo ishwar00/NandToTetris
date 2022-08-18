@@ -54,9 +54,21 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.TRUE, p.parseKeywordConstantExp)
 	p.registerPrefixFn(token.FALSE, p.parseKeywordConstantExp)
 	p.registerPrefixFn(token.THIS, p.parseKeywordConstantExp)
+	p.registerPrefixFn(token.NULL, p.parseKeywordConstantExp)
+	p.registerPrefixFn(token.MINUS, p.parsePrefixExp)
+	p.registerPrefixFn(token.TILDE, p.parsePrefixExp)
+	p.registerPrefixFn(token.LPAREN, p.parseGroupExp)
 
 	p.registerInfixFn(token.LBRACK, p.parseArrayIndex)
 	p.registerInfixFn(token.LPAREN, p.parseSubroutineCall)
+	p.registerInfixFn(token.PLUS, p.parseInfixExp)
+	p.registerInfixFn(token.MINUS, p.parseInfixExp)
+	p.registerInfixFn(token.SLASH, p.parseInfixExp)
+	p.registerInfixFn(token.ASTERI, p.parseInfixExp)
+	p.registerInfixFn(token.LT, p.parseInfixExp)
+	p.registerInfixFn(token.GT, p.parseInfixExp)
+	p.registerInfixFn(token.EQ, p.parseInfixExp)
+	p.registerInfixFn(token.PERIOD, p.parseMethodCall)
 
 	p.nextToken()
 	p.nextToken()
@@ -66,13 +78,14 @@ func New(l *lexer.Lexer) *Parser {
 const (
 	_ int = iota
 	LOWEST
-	EQUALS      // ==
-	LESSGREATER // > or <
-	SUM         // +
-	PRODUCT     // *
-	PREFIX      // -X or !X
-	CALL        // myFunction(X)
-	INDEX
+	OR                // bitwise or
+	AND               // bitwise and
+	EQUALS            // ==
+	LESSGREATER       // > or <
+	SUM               // +
+	PRODUCT           // *
+	PREFIX            // -X or ~X
+	CALL_INDEX_PERIOD // myFunction(X), arr[4], foo.bar()
 )
 
 var precedences = map[token.TokenType]int{
@@ -83,8 +96,9 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:  SUM,
 	token.SLASH:  PRODUCT,
 	token.ASTERI: PRODUCT,
-	token.LPAREN: CALL,
-	token.LBRACK: INDEX,
+	token.LPAREN: CALL_INDEX_PERIOD,
+	token.LBRACK: CALL_INDEX_PERIOD,
+	token.PERIOD: CALL_INDEX_PERIOD,
 }
 
 func (p *Parser) peekPrecedence() int {
@@ -359,6 +373,24 @@ func (p *Parser) parseIdentifierExp() ast.Expression {
 	}
 }
 
+func (p *Parser) parseMethodCall(varName ast.Expression) ast.Expression {
+	infix := &ast.InfixExp{
+		Token:    p.curToken,         // .
+		Operator: p.curToken.Literal, // .
+		Left:     varName,
+	}
+
+	if !p.peekTokenIs(token.IDENT) {
+		p.expectedErr("Identifier", p.peekToken)
+		p.skipToNextSta(token.SEMICO)
+		return nil
+	}
+	precedence := precedences[p.curToken.Type]
+	p.nextToken()
+	infix.Right = p.parseExpression(precedence)
+	return infix
+}
+
 // let Name ('[' Index ']')? = Expression
 func (p *Parser) parseLetStatement() *ast.LetSta {
 	letSta := &ast.LetSta{
@@ -411,7 +443,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		return nil
 	}
 	leftExp := prefix()
-	if !p.peekTokenIs(token.SEMICO) && precedence < p.peekPrecedence() {
+	for !p.peekTokenIs(token.SEMICO) && precedence < p.peekPrecedence() {
 		infix, ok := p.infixFns[p.peekToken.Type]
 		if !ok {
 			return leftExp
@@ -580,7 +612,7 @@ func (p *Parser) parseArrayIndex(left ast.Expression) ast.Expression {
 	}
 
 	p.nextToken()
-	arrayIndex.Right = p.parseExpression(INDEX)
+	arrayIndex.Right = p.parseExpression(CALL_INDEX_PERIOD)
 
 	if !p.peekTokenIs(token.RBRACK) {
 		p.expectedErr("]", p.peekToken)
@@ -684,4 +716,16 @@ func (p *Parser) parseSubroutineCall(leftExp ast.Expression) ast.Expression {
 	}
 	p.nextToken()
 	return subCall
+}
+
+func (p *Parser) parseGroupExp() ast.Expression {
+	p.nextToken()
+	exp := p.parseExpression(LOWEST)
+	if !p.peekTokenIs(token.RPAREN) {
+		p.expectedErr(")", p.peekToken)
+		p.skipToNextSta()
+		return nil
+	}
+	p.nextToken()
+	return exp
 }

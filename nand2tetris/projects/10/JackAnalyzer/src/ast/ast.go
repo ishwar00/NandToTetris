@@ -262,10 +262,13 @@ func (p *PrefixExp) expressionNode() {}
 func (p *PrefixExp) GetToken() token.Token { return p.Token }
 
 func (p *PrefixExp) String() string {
+	if p == nil {
+		return ""
+	}
 	var out bytes.Buffer
 
-	out.WriteString(p.Operator)
-	out.WriteString(p.Right.String())
+	out.WriteString("(" + p.Operator)
+	out.WriteString(p.Right.String() + ")")
 	return out.String()
 }
 
@@ -281,11 +284,22 @@ func (i *InfixExp) expressionNode() {}
 func (i *InfixExp) GetToken() token.Token { return i.Token }
 
 func (i *InfixExp) String() string {
+	if i == nil {
+		return ""
+	}
 	var out bytes.Buffer
+	mp := map[string]string{
+		"(": ")",
+		"[": "]",
+	}
 
-	out.WriteString(i.Left.String())
+	out.WriteString("(" + i.Left.String())
 	out.WriteString(i.Operator)
 	out.WriteString(i.Right.String())
+	if i, ok := mp[i.Operator]; ok {
+		out.WriteString(i)
+	}
+	out.WriteString(")")
 
 	return out.String()
 }
@@ -332,6 +346,9 @@ func (el *ExpressionListExp) expressionNode() {}
 func (el *ExpressionListExp) GetToken() token.Token { return el.Token }
 
 func (el *ExpressionListExp) String() string {
+	if el == nil {
+		return ""
+	}
 	var out bytes.Buffer
 
 	for i, exp := range el.Expressions {
