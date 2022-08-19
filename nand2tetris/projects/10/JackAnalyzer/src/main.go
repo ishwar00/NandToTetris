@@ -42,7 +42,7 @@ func main() {
 			panic(err)
 		}
 		p := parser.New(l)
-		p.ParseProgram()
+		p.ParseClassDec()
 		l.ReportErrors()
 		p.ReportErrors()
 	} else {

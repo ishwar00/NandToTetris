@@ -115,7 +115,7 @@ func (l *Lexer) NextToken() token.Token {
 			return tok
 		} else if isDigit(l.char) { // integer constant
 			number := l.readNumber()
-			tok = l.newToken(token.INT, number)
+			tok = l.newToken(token.INT_CONST, number)
 			return tok
 		} else {
 			tok = l.newToken(token.ILLEGAL, string(l.char))

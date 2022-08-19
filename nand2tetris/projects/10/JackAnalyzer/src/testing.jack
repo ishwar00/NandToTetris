@@ -1,14 +1,7 @@
-while (343) {
-    let boo = 34;
-    let boo = sff;
-    if(abs) {
-        let asdf[43] = dfs;
-        while(abbb) {
-            return sdf; 
-        }
+class Main {
+    field int a;
+
+    function void main() {
+        return;
     }
-    return ;
-    return 453;
-    let asdf[sdfs] = 34;
-    return sdf; 
 }

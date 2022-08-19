@@ -48,7 +48,7 @@ func New(l *lexer.Lexer) *Parser {
 		infixFns:  map[token.TokenType]infixFn{},
 	}
 
-	p.registerPrefixFn(token.INT, p.parseInteger)
+	p.registerPrefixFn(token.INT_CONST, p.parseInteger)
 	p.registerPrefixFn(token.IDENT, p.parseIdentifierExp)
 	p.registerPrefixFn(token.STR_CONST, p.parseStrconstantExp)
 	p.registerPrefixFn(token.TRUE, p.parseKeywordConstantExp)
@@ -69,6 +69,9 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfixFn(token.GT, p.parseInfixExp)
 	p.registerInfixFn(token.EQ, p.parseInfixExp)
 	p.registerInfixFn(token.PERIOD, p.parseMethodCall)
+	p.registerInfixFn(token.AMPERS, p.parseInfixExp)
+	p.registerInfixFn(token.PIPE,   p.parseInfixExp)
+
 
 	p.nextToken()
 	p.nextToken()
@@ -99,6 +102,8 @@ var precedences = map[token.TokenType]int{
 	token.LPAREN: CALL_INDEX_PERIOD,
 	token.LBRACK: CALL_INDEX_PERIOD,
 	token.PERIOD: CALL_INDEX_PERIOD,
+    token.AMPERS: AND,
+    token.PIPE:   OR,
 }
 
 func (p *Parser) peekPrecedence() int {
@@ -156,6 +161,15 @@ func canBeType(tok token.Token) bool {
 		return true
 	}
 	return tok.Type == token.IDENT
+}
+
+func (p *Parser) expectedTypeErr(tok token.Token) {
+    errMsg := "expected an identifier representing name of a " + yellow("DataType") + " here, like int, boolean etc"
+    if token.IsKeyword(tok.Literal) {
+        errMsg = fmt.Sprintf("cannot use reserved keyword '%s' as '%s' name",
+            yellow(tok.Literal), yellow("DataType"))
+    }
+    p.addError(errMsg, tok)
 }
 
 // peeks for static or field variable declaration, if it finds
@@ -263,12 +277,7 @@ func (p *Parser) parseVarDec() *ast.VarDec {
 	}
 	// expected name of a 'data type' next, eg: int, boolean, char, Ball ... etc
 	if !canBeType(p.peekToken) {
-		errMsg := "expected an identifier representing name of a " + yellow("DataType") + " here, like int, boolean etc"
-		if token.IsKeyword(p.peekToken.Literal) {
-			errMsg = fmt.Sprintf("cannot use reserved keyword '%s' as '%s' name",
-				yellow(p.peekToken.Literal), yellow("DataType"))
-		}
-		p.addError(errMsg, p.peekToken)
+        p.expectedTypeErr(p.peekToken)
 		p.skipToNextSta(token.SEMICO)
 		return nil
 	}
@@ -314,6 +323,12 @@ func (p *Parser) parseVarDec() *ast.VarDec {
 	return varDec
 }
 
+func (p *Parser) peekSubroutine() bool {
+    return p.peekToken.Type == token.METHOD ||
+    p.peekToken.Type == token.CONSTRUCTOR ||
+    p.peekToken.Type == token.FUNCTION
+}
+
 // class className {
 //     static|field varName1, varName2, ...;
 //     function|method|constructor type subName(type1 p1, type2 p2, ...) {
@@ -321,7 +336,7 @@ func (p *Parser) parseVarDec() *ast.VarDec {
 //         if|while|do|return statements
 //    }
 // }
-func (p *Parser) parseClassDec() *ast.ClassDec {
+func (p *Parser) ParseClassDec() *ast.ClassDec {
 	classDec := &ast.ClassDec{
 		Token: p.curToken, // keyword class
 	}
@@ -340,11 +355,23 @@ func (p *Parser) parseClassDec() *ast.ClassDec {
 	}
 	p.nextToken()
 
-	for p.peekClassVarDec() {
-		p.nextToken()
-		if varDec := p.parseVarDec(); varDec != nil {
-			classDec.ClassVarDecs = append(classDec.ClassVarDecs, varDec)
-		}
+	for !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
+        if p.peekClassVarDec() {
+            p.nextToken()
+            if varDec := p.parseVarDec(); varDec != nil {
+                classDec.ClassVarDecs = append(classDec.ClassVarDecs, varDec)
+            } 
+        } else if p.peekSubroutine() {
+            p.nextToken()
+            subroutine := p.parseSubroutineBodyDec()
+            if subroutine != nil {
+                classDec.Subroutines = append(classDec.Subroutines, subroutine)
+            }
+        } else {
+            p.expectedErr("expected method or function or constructor or static or field", 
+            p.peekToken)
+        }
+        fmt.Println(p.curToken)
 	}
 
 	if !p.peekTokenIs(token.RBRACE) {
@@ -729,3 +756,153 @@ func (p *Parser) parseGroupExp() ast.Expression {
 	p.nextToken()
 	return exp
 }
+
+func (p *Parser) parseDoSta() *ast.DoSta {
+    doSta := &ast.DoSta{
+        Token: p.curToken,
+    }
+
+    p.nextToken()
+    doSta.SubCall = p.parseExpression(LOWEST)
+    if !p.peekTokenIs(token.SEMICO) {
+        p.expectedErr(";", p.peekToken)
+        p.skipToNextSta()
+        return nil
+    }
+    return doSta
+}
+
+func (p *Parser) parseParameterDec() *ast.ParameterDec {
+    parameter := &ast.ParameterDec{
+        Token: p.curToken,
+        DataType: p.curToken.Literal,
+    }
+
+    if !p.peekTokenIs(token.IDENT) {
+        p.expectedIdentifierErr(p.peekToken)
+        p.skipToNextSta(token.COMMA, token.LPAREN)
+        return nil
+    }
+    p.nextToken()
+    parameter.Identifier = &ast.IdentifierExp{
+        Token: p.curToken,
+        Value: p.curToken.Literal,
+    }
+    return parameter
+}
+
+func (p *Parser) parseParameterListDec() []*ast.ParameterDec {
+    parameters := []*ast.ParameterDec{}
+    err := false
+
+    parameter := p.parseParameterDec()
+    if parameter != nil {
+        parameters = append(parameters, parameter)
+    } else {
+        err = true
+    }
+
+    for p.peekTokenIs(token.COMMA) {
+        p.nextToken()
+        if !canBeType(p.peekToken) {
+            p.expectedTypeErr(p.peekToken)
+            p.skipToNextSta(token.COMMA, token.LPAREN)
+            err = true
+            continue
+        }
+        p.nextToken()
+        parameter = p.parseParameterDec()
+        if parameter == nil {
+            err = true
+            continue
+        }
+        parameters = append(parameters, parameter)
+    }
+    if err {
+        return nil
+    }
+    return parameters
+}
+
+func (p *Parser) parseSubroutineDec() *ast.SubroutineDec {
+    subroutine := &ast.SubroutineDec {
+        Token: p.curToken,
+        Type: p.curToken.Literal,
+    }
+
+    if !canBeType(p.peekToken) {
+        p.expectedTypeErr(p.peekToken)
+        p.skipToNextSta(token.LBRACE)
+        return nil
+    }
+    p.nextToken()
+    subroutine.ReturnType = p.curToken
+
+    if !p.peekTokenIs(token.IDENT) {
+        p.expectedIdentifierErr(p.peekToken)
+        p.skipToNextSta(token.LBRACE)
+        return nil
+    }
+    p.nextToken()
+    subroutine.SubName = &ast.IdentifierExp{
+        Token: p.curToken,
+        Value: p.curToken.Literal,
+    }
+    
+    if !p.peekTokenIs(token.LPAREN) {
+        p.expectedErr("(", p.peekToken)
+        p.skipToNextSta(token.LBRACE)
+        return nil
+    }
+    p.nextToken()
+    if p.peekTokenIs(token.RPAREN) { // zero parameters
+        p.nextToken()
+        return subroutine
+    }
+
+    if !canBeType(p.peekToken) {
+        p.expectedTypeErr(p.peekToken)
+        p.skipToNextSta(token.LBRACE)
+        return nil
+    }
+
+    p.nextToken()
+    subroutine.Parameters = p.parseParameterListDec()
+    if !p.peekTokenIs(token.RPAREN) {
+        p.expectedErr(")", p.peekToken)
+        p.skipToNextSta(token.LBRACE)
+        return nil
+    }
+    p.nextToken()
+    subroutine.Body = *p.parseSubroutineBodyDec()
+
+    return subroutine
+}
+
+func (p *Parser) parseSubroutineBodyDec() *ast.SubroutineBodyDec {
+    body := &ast.SubroutineBodyDec{
+        Token: p.curToken, // {
+    }
+
+    for !p.peekTokenIs(token.LBRACE) && !p.peekTokenIs(token.EOF){
+        if p.peekStatement() || p.peekTokenIs(token.VAR) {
+            p.nextToken()
+            if p.curToken.Type == token.VAR {
+                varDec := p.parseVarDec()
+                if varDec != nil {
+                    body.VarDecs = append(body.VarDecs, varDec)
+                }
+            } else {
+                stmt := p.parseStatement()
+                if stmt != nil && !reflect.ValueOf(stmt).IsZero() {
+                    body.Statements = append(body.Statements, stmt)
+                }
+            }
+        } else {
+            p.expectedErr("var or do or if or while or return", p.peekToken)
+            p.skipToNextSta(token.LBRACE)
+        }
+    }
+    return body
+}
+

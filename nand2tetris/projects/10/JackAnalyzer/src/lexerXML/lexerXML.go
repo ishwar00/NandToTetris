@@ -27,7 +27,7 @@ func Run(file string) error {
 	for tok, buf := l.NextToken(), ""; tok.Type != token.EOF; tok = l.NextToken() {
 		switch tok.Type {
 		case token.CLASS, token.FUNCTION, token.METHOD, token.CONSTRUCTOR, token.FIELD,
-			token.STATIC, token.VAR, token.CHAR, token.BOOLEAN,
+			token.STATIC, token.VAR, token.CHAR, token.BOOLEAN, token.INT,
 			token.TRUE, token.FALSE, token.NULL, token.THIS, token.LET,
 			token.IF, token.ELSE, token.RETURN, token.DO, token.VOID,
 			token.WHILE:
@@ -47,7 +47,7 @@ func Run(file string) error {
 			buf = fmt.Sprintf("%s<symbol>&amp;</symbol>\n", ident)
 		case token.IDENT:
 			buf = fmt.Sprintf("%s<identifier>%v</identifier>\n", ident, tok.Literal)
-		case token.INT:
+		case token.INT_CONST:
 			buf = fmt.Sprintf("%s<integerConstant>%v</integerConstant>\n", ident, tok.Literal)
 		case token.STR_CONST:
 			buf = fmt.Sprintf("%s<stringConstant>%v</stringConstant>\n", ident, tok.Literal)

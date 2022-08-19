@@ -10,6 +10,379 @@ import (
 	"github.com/ishwar00/JackAnalyzer/token"
 )
 
+func TestSubroutineBodyDec(t *testing.T) {
+    tests := []struct {
+        input string
+        expbody *ast.SubroutineBodyDec
+    }{
+        {
+            input: "{ var int a; return; return 3; }",
+            expbody: &ast.SubroutineBodyDec{
+                Token: token.Token{
+                    Literal: "{",
+                    Type: token.LBRACE,
+                },
+                VarDecs: []*ast.VarDec{
+                    { 
+                        Token: token.Token{
+                            Literal: "var",
+                            Type: token.VAR,
+                            OnColumn: 2,
+                        },
+                        DataType: token.Token{
+                            Literal: "int",
+                            Type: token.INT,
+                            OnColumn: 6,
+                        },
+                        IdentifierExps: []*ast.IdentifierExp{
+                            { 
+                                Token: token.Token{
+                                    Literal: "a",
+                                    Type: token.IDENT,
+                                    OnColumn: 10,
+                                },
+                                Value: "a",
+                            },
+                        },
+                    },
+                },
+                Statements: []ast.Statement{
+                    &ast.ReturnSta{
+                        Token: token.Token{
+                            Literal: "return",
+                            Type: token.RETURN,
+                            OnColumn: 13,
+                        },
+                    },
+                    &ast.ReturnSta{
+                        Token: token.Token{
+                            Literal: "return",
+                            Type: token.RETURN,
+                            OnColumn: 21,
+                        },
+                        Expression: &ast.IntConstExp{
+                            Token: token.Token{
+                                Literal: "3",
+                                Type: token.INT_CONST,
+                                OnColumn: 28,
+                            },
+                            Value: 3,
+                        },
+                    },
+                },
+            },
+        },
+    }
+
+    for i, tt := range tests {
+        l := lexer.LexString(tt.input)
+        p := New(l)
+        body := p.parseSubroutineBodyDec()
+        if body == nil {
+            t.Fatalf("tests[%d]: body is nil", i)
+        }
+
+        if !reflect.DeepEqual(body, tt.expbody) {
+            t.Fatalf("tests[%d]: body is not \n%+v, got=\n%+v", i, *tt.expbody, *body)
+        }
+    }
+}
+
+func TestSubroutineDec(t *testing.T) {
+    tests := []struct {
+        input string
+        expSubroutineDec *ast.SubroutineDec
+    }{
+        {
+            input: "constructor int main()",
+            expSubroutineDec: &ast.SubroutineDec{
+                Token: token.Token{
+                    Literal: "constructor",
+                    Type: token.CONSTRUCTOR,
+                },
+                Type: "constructor",
+                ReturnType: token.Token{
+                    Literal: "int",
+                    Type: token.INT,
+                    OnColumn: 12,
+                },
+                SubName: &ast.IdentifierExp{
+                    Token: token.Token{
+                        Literal: "main",
+                        Type: token.IDENT,
+                        OnColumn: 16,
+                    },
+                    Value: "main",
+                },
+            },
+        },
+        {
+            input: "method Ball add(int n, string foo, Block block)",
+            expSubroutineDec: &ast.SubroutineDec{
+                Token: token.Token{
+                    Literal: "method",
+                    Type: token.METHOD,
+                },
+                Type: "method",
+                ReturnType: token.Token{
+                    Literal: "Ball",
+                    Type: token.IDENT,
+                    OnColumn: 7,
+                },
+                SubName: &ast.IdentifierExp{
+                    Token: token.Token{
+                        Literal: "add",
+                        Type: token.IDENT,
+                        OnColumn: 12,
+                    },
+                    Value: "add",
+                },
+                Parameters: []*ast.ParameterDec{
+                    {
+                        Token: token.Token{
+                            Literal: "int",
+                            Type: token.INT,
+                            OnColumn: 16,
+                        },
+                        DataType: "int",
+                        Identifier: &ast.IdentifierExp{
+                            Token: token.Token{
+                                Literal: "n",
+                                Type: token.IDENT,
+                                OnColumn: 20,
+                            },
+                            Value: "n",
+                        },
+                    },
+                    {
+                        Token: token.Token{
+                            Literal: "string",
+                            Type: token.IDENT,
+                            OnColumn: 23,
+                        },
+                        DataType: "string",
+                        Identifier: &ast.IdentifierExp{
+                            Token: token.Token{
+                                Literal: "foo",
+                                Type: token.IDENT,
+                                OnColumn: 30,
+                            },
+                            Value: "foo",
+                        },
+                    },
+                    {
+                        Token: token.Token{
+                            Literal: "Block",
+                            Type: token.IDENT,
+                            OnColumn: 35,
+                        },
+                        DataType: "Block",
+                        Identifier: &ast.IdentifierExp{
+                            Token: token.Token{
+                                Literal: "block",
+                                Type: token.IDENT,
+                                OnColumn: 41,
+                            },
+                            Value: "block",
+                        },
+                    },
+                },
+            },
+        },
+    }
+
+    for i, tt := range tests {
+        l := lexer.LexString(tt.input)
+        p := New(l)
+        subroutine := p.parseSubroutineDec()
+        if subroutine == nil {
+            t.Fatalf("tests[%d]: subroutine is nil", i)
+        }
+
+        if !reflect.DeepEqual(subroutine, tt.expSubroutineDec) {
+            t.Fatalf("tests[%d]: subroutine is not \n%+v, got=\n%+v", 
+            i, *tt.expSubroutineDec.Parameters[1], *subroutine.Parameters[1])
+        }
+    }
+}
+
+func TestParameterListDec(t *testing.T) {
+    tests := []struct {
+        input string
+        expParamList []*ast.ParameterDec
+    }{
+        {
+            input: "int a",
+            expParamList: []*ast.ParameterDec{
+                {
+                    Token: token.Token{
+                        Literal: "int",
+                        Type: token.INT,
+                    },
+                    DataType: "int",
+                    Identifier: &ast.IdentifierExp{
+                        Token: token.Token{
+                            Literal: "a",
+                            Type: token.IDENT,
+                            OnColumn: 4,
+                        },
+                        Value: "a",
+                    },
+                },
+            },
+        },
+        {
+            input: "int a, Ball b, boolean c",
+            expParamList: []*ast.ParameterDec{
+                {
+                    Token: token.Token{
+                        Literal: "int",
+                        Type: token.INT,
+                    },
+                    DataType: "int",
+                    Identifier: &ast.IdentifierExp{
+                        Token: token.Token{
+                            Literal: "a",
+                            Type: token.IDENT,
+                            OnColumn: 4,
+                        },
+                        Value: "a",
+                    },
+                },
+                {
+                    Token: token.Token{
+                        Literal: "Ball",
+                        Type: token.IDENT,
+                        OnColumn: 7,
+                    },
+                    DataType: "Ball",
+                    Identifier: &ast.IdentifierExp{
+                        Token: token.Token{
+                            Literal: "b",
+                            Type: token.IDENT,
+                            OnColumn: 12,
+                        },
+                        Value: "b",
+                    },
+                },
+                {
+                    Token: token.Token{
+                        Literal: "boolean",
+                        Type: token.BOOLEAN,
+                        OnColumn: 15,
+                    },
+                    DataType: "boolean",
+                    Identifier: &ast.IdentifierExp{
+                        Token: token.Token{
+                            Literal: "c",
+                            Type: token.IDENT,
+                            OnColumn: 23,
+                        },
+                        Value: "c",
+                    },
+                },
+            },
+        },
+    }
+
+    for i, tt := range tests {
+        l := lexer.LexString(tt.input)
+        p := New(l)
+        pl := p.parseParameterListDec()
+        if pl == nil {
+            t.Fatalf("tests[%d]: pl is nil", i)
+        }
+
+        if !reflect.DeepEqual(pl, tt.expParamList) {
+            t.Fatalf("tests[%d]: pl is not '%+v', got=%+v", i, tt.expParamList, pl)
+        }
+    }
+}
+
+func TestParseParameterDec(t *testing.T) {
+    tests := []struct {
+        input string
+        expParameterDec *ast.ParameterDec
+    }{
+        {
+            input: "int p",
+            expParameterDec: &ast.ParameterDec{
+                Token: token.Token{
+                    Literal: "int",
+                    Type: token.INT,
+                },
+                DataType: "int",
+                Identifier: &ast.IdentifierExp{
+                    Token: token.Token{
+                        Literal: "p",
+                        Type: token.IDENT,
+                        OnColumn: 4,
+                    },
+                    Value: "p",
+                },
+            },
+        },
+    }
+
+    for i, tt := range tests {
+        l := lexer.LexString(tt.input)
+        p := New(l)
+        parameter := p.parseParameterDec()
+        if parameter == nil {
+            t.Fatalf("tests[%d]: parameter is nil ", i)
+        }
+
+        if !reflect.DeepEqual(parameter, tt.expParameterDec) {
+            t.Fatalf("tests[%d]: parameter is not %+v, got=%+v", 
+            i, parameter, tt.expParameterDec)
+        }
+    }
+}
+
+func TestDoSta(t *testing.T) {
+    tests := []struct {
+        input string
+        expDoSta *ast.DoSta 
+    }{
+        {
+            input: "do call();",
+            expDoSta: &ast.DoSta{
+                Token: token.Token{
+                    Literal: "do",
+                    Type: token.DO,
+                },
+                SubCall: &ast.InfixExp{
+                    Token: token.Token{
+                        Literal: "(",
+                        Type: token.LPAREN,
+                        OnColumn: 7,
+                    },
+                    Left: &ast.IdentifierExp{
+                        Token: token.Token{
+                            Literal: "call",
+                            Type: token.IDENT,
+                            OnColumn: 3,
+                        },
+                        Value: "call",
+                    },
+                    Operator: "(",
+                },
+            },
+
+        },
+    }
+
+    for i, tt := range tests {
+        l := lexer.LexString(tt.input)
+        p := New(l)
+        doSta := p.parseDoSta()
+
+        if !reflect.DeepEqual(doSta, tt.expDoSta) {
+            t.Fatalf("tests[%d]: doSta is not %+v, got=%+v", i, tt.expDoSta, doSta)
+        }
+    }
+}
+
 func TestArithmeticExp(t *testing.T) {
 	tests := []struct {
 		input         string
@@ -97,27 +470,67 @@ func TestArithmeticExp(t *testing.T) {
 		},
 		{
 			"a + add(b * c) + d",
-			"((a+(add((b*c))))+d)",
+			"((a+add((b*c)))+d)",
 		},
 		{
 			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
-			"(add(a,b,1,(2*3),(4+5),(add(6,(7*8)))))",
+			"add(a,b,1,(2*3),(4+5),add(6,(7*8)))",
 		},
 		{
 			"add(a + b + c * d / f + g)",
-			"(add((((a+b)+((c*d)/f))+g)))",
+			"add((((a+b)+((c*d)/f))+g))",
 		},
 		{
 			"add(arr[0], \"str\", varName, call(A[index]))",
-			"(add((arr[0]),str,varName,(call((A[index])))))",
+			"add(arr[0],\"str\",varName,call(A[index]))",
 		},
+        {
+            "foo.bar.deep.source(4, 45 + bruh, totoro)",
+            "(((foo.bar).deep).source)(4,(45+bruh),totoro)",
+        },
+        {
+            "4 & 2 | 33",
+            "((4&2)|33)",
+        },
+        {
+            "1 & 5 + 88 * 4 | 5",
+            "((1&(5+(88*4)))|5)",
+        },
+        {
+            "a = null",
+            "(a=null)",
+        },
+        {
+            "true & true = true",
+            "(true&(true=true))",
+        },
+        {
+            "4 + 2 * 4 = 12",
+            "((4+(2*4))=12)",
+        },
+        {
+            "~true=false",
+            "((~true)=false)",
+        },
+        {
+            "~(true=false)", // that's != equivalent in Jack
+            "(~(true=false))",
+        },
+        {
+            "party()=true",
+            "(party()=true)",
+        },
+        {
+            "a() < b(\"dun dun\")",
+            "(a()<b(\"dun dun\"))",
+        },
 	}
 
 	for i, tt := range tests {
 		l := lexer.LexString(tt.input)
 		p := New(l)
 		exp := p.parseExpression(LOWEST)
-		if exp.String() != tt.expExpression {
+		if exp == nil || reflect.ValueOf(exp).IsZero() || exp.String() != tt.expExpression {
 			t.Fatalf("tests[%d]: exp is not %+v, got=%+v", i, tt.expExpression, exp.String())
 		}
 	}
@@ -242,14 +655,14 @@ func TestMethodCall(t *testing.T) {
 				Right: &ast.ExpressionListExp{
 					Token: token.Token{
 						Literal:  "4",
-						Type:     token.INT,
+						Type:     token.INT_CONST,
 						OnColumn: 8,
 					},
 					Expressions: []ast.Expression{
 						&ast.IntConstExp{
 							Token: token.Token{
 								Literal:  "4",
-								Type:     token.INT,
+								Type:     token.INT_CONST,
 								OnColumn: 8,
 							},
 							Value: 4,
@@ -287,7 +700,7 @@ func TestMethodCall(t *testing.T) {
 									&ast.IntConstExp{
 										Token: token.Token{
 											Literal:  "9",
-											Type:     token.INT,
+											Type:     token.INT_CONST,
 											OnColumn: 19,
 										},
 										Value: 9,
@@ -359,14 +772,14 @@ func TestSubroutineCall(t *testing.T) {
 				Right: &ast.ExpressionListExp{
 					Token: token.Token{
 						Literal:  "3",
-						Type:     token.INT,
+						Type:     token.INT_CONST,
 						OnColumn: 11,
 					},
 					Expressions: []ast.Expression{
 						&ast.IntConstExp{
 							Token: token.Token{
 								Literal:  "3",
-								Type:     token.INT,
+								Type:     token.INT_CONST,
 								OnColumn: 11,
 							},
 							Value: 3,
@@ -374,7 +787,7 @@ func TestSubroutineCall(t *testing.T) {
 						&ast.IntConstExp{
 							Token: token.Token{
 								Literal:  "45",
-								Type:     token.INT,
+								Type:     token.INT_CONST,
 								OnColumn: 14,
 							},
 							Value: 45,
@@ -487,13 +900,13 @@ func TestExpressionList(t *testing.T) {
 			expExpList: ast.ExpressionListExp{
 				Token: token.Token{
 					Literal: "2",
-					Type:    token.INT,
+					Type:    token.INT_CONST,
 				},
 				Expressions: []ast.Expression{
 					&ast.IntConstExp{
 						Token: token.Token{
 							Literal: "2",
-							Type:    token.INT,
+							Type:    token.INT_CONST,
 						},
 						Value: 2,
 					},
@@ -505,20 +918,20 @@ func TestExpressionList(t *testing.T) {
 			expExpList: ast.ExpressionListExp{
 				Token: token.Token{
 					Literal: "2",
-					Type:    token.INT,
+					Type:    token.INT_CONST,
 				},
 				Expressions: []ast.Expression{
 					&ast.IntConstExp{
 						Token: token.Token{
 							Literal: "2",
-							Type:    token.INT,
+							Type:    token.INT_CONST,
 						},
 						Value: 2,
 					},
 					&ast.IntConstExp{
 						Token: token.Token{
 							Literal:  "3",
-							Type:     token.INT,
+							Type:     token.INT_CONST,
 							OnColumn: 3,
 						},
 						Value: 3,
@@ -526,7 +939,7 @@ func TestExpressionList(t *testing.T) {
 					&ast.IntConstExp{
 						Token: token.Token{
 							Literal:  "4",
-							Type:     token.INT,
+							Type:     token.INT_CONST,
 							OnColumn: 6,
 						},
 						Value: 4,
@@ -552,7 +965,7 @@ func TestExpressionList(t *testing.T) {
 					&ast.IntConstExp{
 						Token: token.Token{
 							Literal:  "3",
-							Type:     token.INT,
+							Type:     token.INT_CONST,
 							OnColumn: 3,
 						},
 						Value: 3,
@@ -619,7 +1032,7 @@ func TestArrayIndex(t *testing.T) {
 				Right: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "343",
-						Type:     token.INT,
+						Type:     token.INT_CONST,
 						OnLine:   0,
 						OnColumn: 4,
 					},
@@ -689,7 +1102,7 @@ func TestReturnSta(t *testing.T) {
 				Expression: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "34",
-						Type:     token.INT,
+						Type:     token.INT_CONST,
 						OnLine:   0,
 						OnColumn: 7,
 					},
@@ -737,7 +1150,7 @@ func TestWhileSta(t *testing.T) {
 				Condition: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "343",
-						Type:     token.INT,
+						Type:     token.INT_CONST,
 						OnLine:   0,
 						OnColumn: 6,
 					},
@@ -869,7 +1282,7 @@ func TestStatementBlock(t *testing.T) {
 						Expression: &ast.IntConstExp{
 							Token: token.Token{
 								Literal:  "345",
-								Type:     token.INT,
+								Type:     token.INT_CONST,
 								OnLine:   0,
 								OnColumn: 10,
 							},
@@ -945,7 +1358,7 @@ func TestIfElseSta(t *testing.T) {
 				Condition: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "343",
-						Type:     token.INT,
+						Type:     token.INT_CONST,
 						OnLine:   0,
 						OnColumn: 3,
 					},
@@ -1006,7 +1419,7 @@ func TestIfElseSta(t *testing.T) {
 							Expression: &ast.IntConstExp{
 								Token: token.Token{
 									Literal:  "34",
-									Type:     token.INT,
+									Type:     token.INT_CONST,
 									OnLine:   0,
 									OnColumn: 19,
 								},
@@ -1062,7 +1475,7 @@ func TestIfElseSta(t *testing.T) {
 							Expression: &ast.IntConstExp{
 								Token: token.Token{
 									Literal:  "34",
-									Type:     token.INT,
+									Type:     token.INT_CONST,
 									OnLine:   0,
 									OnColumn: 19,
 								},
@@ -1098,7 +1511,7 @@ func TestIfElseSta(t *testing.T) {
 							Expression: &ast.IntConstExp{
 								Token: token.Token{
 									Literal:  "3",
-									Type:     token.INT,
+									Type:     token.INT_CONST,
 									OnLine:   0,
 									OnColumn: 41,
 								},
@@ -1169,7 +1582,7 @@ func TestLetStatement(t *testing.T) {
 				Expression: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "34",
-						Type:     token.INT,
+						Type:     token.INT_CONST,
 						OnLine:   0,
 						OnColumn: 8,
 					},
@@ -1233,7 +1646,7 @@ func TestLetStatement(t *testing.T) {
 					Right: &ast.IntConstExp{
 						Token: token.Token{
 							Literal:  "3",
-							Type:     token.INT,
+							Type:     token.INT_CONST,
 							OnColumn: 6,
 						},
 						Value: 3,
@@ -1242,7 +1655,7 @@ func TestLetStatement(t *testing.T) {
 				Expression: &ast.IntConstExp{
 					Token: token.Token{
 						Literal:  "34",
-						Type:     token.INT,
+						Type:     token.INT_CONST,
 						OnColumn: 11,
 					},
 					Value: 34,
@@ -1341,7 +1754,7 @@ func TestParseConstant(t *testing.T) {
 			expExpression: &ast.IntConstExp{
 				Token: token.Token{
 					Literal:  "345",
-					Type:     token.INT,
+					Type:     token.INT_CONST,
 					OnLine:   0,
 					OnColumn: 0,
 				},

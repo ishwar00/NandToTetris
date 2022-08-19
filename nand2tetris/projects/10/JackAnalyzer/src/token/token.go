@@ -34,8 +34,9 @@ const (
 	EQ
 	TILDE
 
-	// constants "abc", "hey" ...
+	// constants "abc", "hey", 45, 5 ...
 	STR_CONST
+    INT_CONST
 
 	// indentifiers and keywords, abc_d, if, class ...
 	IDENT
