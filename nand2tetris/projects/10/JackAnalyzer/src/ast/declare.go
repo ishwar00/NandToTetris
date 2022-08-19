@@ -2,7 +2,7 @@ package ast
 
 import (
 	"bytes"
-    "fmt"
+	"fmt"
 
 	"github.com/ishwar00/JackAnalyzer/token"
 )
@@ -60,7 +60,7 @@ type ClassDec struct {
 	Token        token.Token // class token
 	Name         string      // name of the class
 	ClassVarDecs []*VarDec
-    Subroutines  []*SubroutineBodyDec 
+	Subroutines  []*SubroutineBodyDec
 }
 
 func (cd *ClassDec) GetToken() token.Token { return cd.Token }
@@ -86,9 +86,9 @@ func (cs *ClassDec) String() string {
 }
 
 type ParameterDec struct {
-    Token token.Token
-    DataType string
-    Identifier *IdentifierExp
+	Token      token.Token
+	DataType   string
+	Identifier *IdentifierExp
 }
 
 func (p *ParameterDec) declarationNode() {}
@@ -96,20 +96,20 @@ func (p *ParameterDec) declarationNode() {}
 func (p *ParameterDec) GetToken() token.Token { return p.Token }
 
 func (p *ParameterDec) String() string {
-    var out bytes.Buffer
+	var out bytes.Buffer
 
-    out.WriteString(p.DataType + " " + p.Identifier.String())
-    return out.String()
+	out.WriteString(p.DataType + " " + p.Identifier.String())
+	return out.String()
 }
 
 // TODO: little clunky, do better
 type SubroutineDec struct {
-    Token token.Token // function|method|constructor
-    Type  string
-    ReturnType token.Token
-    SubName *IdentifierExp // subroutine name
-    Parameters []*ParameterDec
-    Body    SubroutineBodyDec
+	Token      token.Token // function|method|constructor
+	Type       string
+	ReturnType token.Token
+	SubName    *IdentifierExp // subroutine name
+	Parameters []*ParameterDec
+	Body       SubroutineBodyDec
 }
 
 func (s *SubroutineDec) declarationNode() {}
@@ -117,23 +117,23 @@ func (s *SubroutineDec) declarationNode() {}
 func (s *SubroutineDec) GetToken() token.Token { return s.Token }
 
 func (s *SubroutineDec) String() string {
-    var out bytes.Buffer
+	var out bytes.Buffer
 
-    out.WriteString(s.Type + " " + s.ReturnType.Literal + " ")
-    out.WriteString(s.SubName.String() + "(") 
-    for i, param := range s.Parameters {
-        out.WriteString(param.String())
-        if i+1 < len(s.Parameters) {
-            out.WriteString(",")
-        }
-    }
-    return out.String()
+	out.WriteString(s.Type + " " + s.ReturnType.Literal + " ")
+	out.WriteString(s.SubName.String() + "(")
+	for i, param := range s.Parameters {
+		out.WriteString(param.String())
+		if i+1 < len(s.Parameters) {
+			out.WriteString(",")
+		}
+	}
+	return out.String()
 }
 
 type SubroutineBodyDec struct {
-    Token token.Token
-    VarDecs []*VarDec
-    Statements []Statement
+	Token      token.Token
+	VarDecs    []*VarDec
+	Statements []Statement
 }
 
 func (s *SubroutineBodyDec) declarationNode() {}
@@ -141,13 +141,13 @@ func (s *SubroutineBodyDec) declarationNode() {}
 func (s *SubroutineBodyDec) GetToken() token.Token { return s.Token }
 
 func (s *SubroutineBodyDec) String() string {
-    var out bytes.Buffer
+	var out bytes.Buffer
 
-    tab := "    "
-    out.WriteString("{\n")
-    for _, stmt := range s.Statements {
-        out.WriteString(tab + stmt.String() + "\n")
-    }
-    out.WriteString("\n}")
-    return out.String()
+	tab := "    "
+	out.WriteString("{\n")
+	for _, stmt := range s.Statements {
+		out.WriteString(tab + stmt.String() + "\n")
+	}
+	out.WriteString("\n}")
+	return out.String()
 }

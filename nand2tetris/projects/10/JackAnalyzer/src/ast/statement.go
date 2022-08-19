@@ -55,7 +55,7 @@ func (sb *StatementBlockSta) String() string {
 
 	var out bytes.Buffer
 
-    tab := "    "
+	tab := "    "
 	for _, stmt := range sb.Statements {
 		out.WriteString(tab + stmt.String() + "\n")
 	}
@@ -120,8 +120,8 @@ func (ws *WhileSta) String() string {
 }
 
 type DoSta struct {
-    Token token.Token // do
-    SubCall Expression
+	Token   token.Token // do
+	SubCall Expression
 }
 
 func (d *DoSta) statementNode() {}
@@ -129,11 +129,11 @@ func (d *DoSta) statementNode() {}
 func (d *DoSta) GetToken() token.Token { return d.Token }
 
 func (d *DoSta) String() string {
-    var out bytes.Buffer
+	var out bytes.Buffer
 
-    out.WriteString("do ")
-    out.WriteString(d.SubCall.String() + ";")
-    return out.String()
+	out.WriteString("do ")
+	out.WriteString(d.SubCall.String() + ";")
+	return out.String()
 }
 
 type ReturnSta struct {
@@ -151,10 +151,10 @@ func (r *ReturnSta) String() string {
 	}
 
 	var out bytes.Buffer
-	out.WriteString("return ") 
-    if r.Expression != nil {
-        out.WriteString(r.Expression.String())
-    }
-    out.WriteString(";")
+	out.WriteString("return ")
+	if r.Expression != nil {
+		out.WriteString(r.Expression.String())
+	}
+	out.WriteString(";")
 	return out.String()
 }
