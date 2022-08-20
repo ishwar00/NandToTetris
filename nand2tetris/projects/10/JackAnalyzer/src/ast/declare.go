@@ -60,7 +60,7 @@ type ClassDec struct {
 	Token        token.Token // class token
 	Name         string      // name of the class
 	ClassVarDecs []*VarDec
-	Subroutines  []*SubroutineBodyDec
+	Subroutines  []*SubroutineDec
 }
 
 func (cd *ClassDec) GetToken() token.Token { return cd.Token }
@@ -80,6 +80,10 @@ func (cs *ClassDec) String() string {
 	for _, varDec := range cs.ClassVarDecs {
 		out.WriteString(tab + varDec.String() + "\n")
 	}
+
+	for _, subroutine := range cs.Subroutines {
+		out.WriteString(tab + subroutine.String() + "\n")
+	}
 	out.WriteString("\n}")
 
 	return out.String()
@@ -96,6 +100,9 @@ func (p *ParameterDec) declarationNode() {}
 func (p *ParameterDec) GetToken() token.Token { return p.Token }
 
 func (p *ParameterDec) String() string {
+	if p == nil {
+		return ""
+	}
 	var out bytes.Buffer
 
 	out.WriteString(p.DataType + " " + p.Identifier.String())
@@ -109,7 +116,7 @@ type SubroutineDec struct {
 	ReturnType token.Token
 	SubName    *IdentifierExp // subroutine name
 	Parameters []*ParameterDec
-	Body       SubroutineBodyDec
+	Body       *SubroutineBodyDec
 }
 
 func (s *SubroutineDec) declarationNode() {}
@@ -117,6 +124,9 @@ func (s *SubroutineDec) declarationNode() {}
 func (s *SubroutineDec) GetToken() token.Token { return s.Token }
 
 func (s *SubroutineDec) String() string {
+	if s == nil {
+		return ""
+	}
 	var out bytes.Buffer
 
 	out.WriteString(s.Type + " " + s.ReturnType.Literal + " ")
@@ -127,6 +137,8 @@ func (s *SubroutineDec) String() string {
 			out.WriteString(",")
 		}
 	}
+	out.WriteString(")")
+	out.WriteString(s.Body.String())
 	return out.String()
 }
 
@@ -141,6 +153,9 @@ func (s *SubroutineBodyDec) declarationNode() {}
 func (s *SubroutineBodyDec) GetToken() token.Token { return s.Token }
 
 func (s *SubroutineBodyDec) String() string {
+	if s == nil {
+		return ""
+	}
 	var out bytes.Buffer
 
 	tab := "    "

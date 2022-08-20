@@ -42,9 +42,10 @@ func main() {
 			panic(err)
 		}
 		p := parser.New(l)
-		p.ParseClassDec()
+		class := p.ParseClassDec()
 		l.ReportErrors()
 		p.ReportErrors()
+		fmt.Println(class.String())
 	} else {
 		errMsg := fmt.Errorf("invalid argument %s", path)
 		panic(errMsg)

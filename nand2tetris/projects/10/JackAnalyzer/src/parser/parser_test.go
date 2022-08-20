@@ -94,7 +94,7 @@ func TestSubroutineDec(t *testing.T) {
 		expSubroutineDec *ast.SubroutineDec
 	}{
 		{
-			input: "constructor int main()",
+			input: "constructor int main(){}",
 			expSubroutineDec: &ast.SubroutineDec{
 				Token: token.Token{
 					Literal: "constructor",
@@ -114,10 +114,17 @@ func TestSubroutineDec(t *testing.T) {
 					},
 					Value: "main",
 				},
+				Body: &ast.SubroutineBodyDec{
+					Token: token.Token{
+						Literal:  "{",
+						Type:     token.LBRACE,
+						OnColumn: 22,
+					},
+				},
 			},
 		},
 		{
-			input: "method Ball add(int n, string foo, Block block)",
+			input: "method Ball add(int n, string foo, Block block){}",
 			expSubroutineDec: &ast.SubroutineDec{
 				Token: token.Token{
 					Literal: "method",
@@ -136,6 +143,13 @@ func TestSubroutineDec(t *testing.T) {
 						OnColumn: 12,
 					},
 					Value: "add",
+				},
+				Body: &ast.SubroutineBodyDec{
+					Token: token.Token{
+						Literal:  "{",
+						Type:     token.LBRACE,
+						OnColumn: 47,
+					},
 				},
 				Parameters: []*ast.ParameterDec{
 					{
@@ -201,7 +215,7 @@ func TestSubroutineDec(t *testing.T) {
 
 		if !reflect.DeepEqual(subroutine, tt.expSubroutineDec) {
 			t.Fatalf("tests[%d]: subroutine is not \n%+v, got=\n%+v",
-				i, *tt.expSubroutineDec.Parameters[1], *subroutine.Parameters[1])
+				i, tt.expSubroutineDec, subroutine)
 		}
 	}
 }

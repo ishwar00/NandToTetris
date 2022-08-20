@@ -38,6 +38,7 @@ func (e ErrHandler) ReportAll() {
 	if e.QueueSize() == 0 {
 		return
 	}
+	fmt.Printf("queue: %+v\n", e)
 	fileErrs := map[string][]Error{}
 
 	// classify errors by files
@@ -73,7 +74,9 @@ func (e ErrHandler) ReportAll() {
 			}
 		}
 		for errMsg := range errBuf {
-			report(program[curLine], errBuf[errMsg])
+			if curLine < len(program) {
+				report(program[curLine], errBuf[errMsg])
+			}
 		}
 	}
 }
@@ -97,6 +100,7 @@ func report(line string, errs []Error) {
 	errLine += line[last:]
 
 	lineNumber := fmt.Sprintf(" %d| ", errs[0].OnLine+1)
+	fmt.Printf("lineNumber: %d\n", errs[0].OnLine)
 	padding := createString(len(lineNumber)-2, ' ') + "| " // ----|
 	errMsg := padding + "\n"
 	errMsg += lineNumber + errLine + "\n"

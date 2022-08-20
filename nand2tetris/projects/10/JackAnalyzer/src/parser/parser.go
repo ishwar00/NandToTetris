@@ -27,6 +27,31 @@ var statementTokens = []token.TokenType{
 	token.DO,
 }
 
+var subroutineTokens = []token.TokenType{
+	token.CONSTRUCTOR,
+	token.METHOD,
+	token.FUNCTION,
+}
+
+// subroutineBody level error recovery tokens
+var subErrTokens = []token.TokenType{
+	token.LET,
+	token.WHILE,
+	token.IF,
+	token.RETURN,
+	token.DO,
+	token.VAR,
+}
+
+// class level recovery tokens
+var classErrTokens = []token.TokenType{
+	token.CONSTRUCTOR,
+	token.METHOD,
+	token.FUNCTION,
+	token.STATIC,
+	token.FIELD,
+}
+
 type (
 	prefixFn func() ast.Expression
 	infixFn  func(ast.Expression) ast.Expression
@@ -159,7 +184,7 @@ func canBeType(tok token.Token) bool {
 	if isNativeType(tok) {
 		return true
 	}
-	return tok.Type == token.IDENT
+	return tok.Type == token.IDENT || tok.Type == token.VOID
 }
 
 func (p *Parser) expectedTypeErr(tok token.Token) {
@@ -174,15 +199,15 @@ func (p *Parser) expectedTypeErr(tok token.Token) {
 // peeks for static or field variable declaration, if it finds
 // var variable declaration, it adds error for var and skips
 // whole var declaration and calls itself again.
-func (p *Parser) peekClassVarDec() bool {
+func (p *Parser) peekClassVarDec(skipTo ...token.TokenType) bool {
 	if p.peekTokenIs(token.VAR) {
-		errMsg := fmt.Sprintf("cannot use %s(used for local variable declaration), expected %s or %s",
+		errMsg := fmt.Sprintf("cannot use %s (used for local variable declaration), expected %s or %s",
 			red("var"), green("static"), green("field"))
 
 		p.addError(errMsg, p.peekToken)
-		p.nextToken()                 // consume semicolon ;
-		p.skipToNextSta(token.SEMICO) // skipping to next semicolon
-		return p.peekClassVarDec()
+		p.nextToken()           // consume semicolon ;
+		p.skipToNext(skipTo...) // skipping to next semicolon
+		return p.peekClassVarDec(skipTo...)
 	}
 	return p.peekTokenIs(token.STATIC) || p.peekTokenIs(token.FIELD)
 }
@@ -193,8 +218,23 @@ func (p *Parser) peekStatement() bool {
 }
 
 // skip to next toks, which ever comes first
-func (p *Parser) skipToNextSta(toks ...token.TokenType) {
-	toks = append(toks, statementTokens...)
+func (p *Parser) skipToNext(toks ...token.TokenType) {
+	match := func() bool {
+		for _, tok := range toks {
+			if p.peekTokenIs(tok) {
+				return true
+			}
+		}
+		return false
+	}
+
+	for !p.peekTokenIs(token.EOF) && !match() {
+		p.nextToken()
+	}
+}
+
+func (p *Parser) skipToNextSub(toks ...token.TokenType) {
+	toks = append(toks, subroutineTokens...)
 	match := func() bool {
 		for _, tok := range toks {
 			if p.peekTokenIs(tok) {
@@ -237,21 +277,22 @@ func (p *Parser) ParseProgram() {
 	}
 }
 
-func (p *Parser) parseStatement() ast.Statement {
+func (p *Parser) parseStatement(skipTo ...token.TokenType) ast.Statement {
 	switch p.curToken.Type {
 	case token.IF:
-		return p.parseIfElseSta()
+		return p.parseIfElseSta(skipTo...)
 	case token.DO:
-		return nil
+		return p.parseDoSta(skipTo...)
 	case token.LET:
-		return p.parseLetStatement()
+		return p.parseLetStatement(skipTo...)
 	case token.WHILE:
-		return p.parseWhileSta()
+		return p.parseWhileSta(skipTo...)
 	case token.RETURN:
-		return p.parseReturnSta()
-	default:
-		return nil
+		return p.parseReturnSta(skipTo...)
 	}
+	errMsg := "internal error: parser.parseStatement was called on " + red(p.curToken.Literal)
+	p.addError(errMsg, p.curToken)
+	return nil
 }
 
 // helper to add error message
@@ -270,14 +311,14 @@ func (p *Parser) expectedErr(expected string, got token.Token) {
 }
 
 // parses: static|field|var varName1, varName2, ... ;
-func (p *Parser) parseVarDec() *ast.VarDec {
+func (p *Parser) parseVarDec(skipTo ...token.TokenType) *ast.VarDec {
 	varDec := &ast.VarDec{
-		Token: p.curToken, // var, static, field keyword
+		Token: p.curToken, // var, static, field
 	}
 	// expected name of a 'data type' next, eg: int, boolean, char, Ball ... etc
 	if !canBeType(p.peekToken) {
 		p.expectedTypeErr(p.peekToken)
-		p.skipToNextSta(token.SEMICO)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 
@@ -287,7 +328,7 @@ func (p *Parser) parseVarDec() *ast.VarDec {
 	// expecting identifier
 	if !p.peekTokenIs(token.IDENT) {
 		p.expectedIdentifierErr(p.peekToken)
-		p.skipToNextSta(token.SEMICO)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -302,7 +343,7 @@ func (p *Parser) parseVarDec() *ast.VarDec {
 		p.nextToken() // on ,(comma)
 		if !p.peekTokenIs(token.IDENT) {
 			p.expectedIdentifierErr(p.peekToken)
-			p.skipToNextSta(token.SEMICO)
+			p.skipToNext(skipTo...)
 			return nil
 		}
 		p.nextToken()
@@ -315,7 +356,7 @@ func (p *Parser) parseVarDec() *ast.VarDec {
 
 	if !p.peekTokenIs(token.SEMICO) {
 		p.expectedErr(";", p.peekToken)
-		p.skipToNextSta(token.SEMICO)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -354,29 +395,32 @@ func (p *Parser) ParseClassDec() *ast.ClassDec {
 	}
 	p.nextToken()
 
+	errRecToks := append(subroutineTokens, token.FIELD, token.STATIC)
+
 	for !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
-		if p.peekClassVarDec() {
+		if p.peekClassVarDec(errRecToks...) {
 			p.nextToken()
-			if varDec := p.parseVarDec(); varDec != nil {
+			if varDec := p.parseVarDec(errRecToks...); varDec != nil {
 				classDec.ClassVarDecs = append(classDec.ClassVarDecs, varDec)
 			}
 		} else if p.peekSubroutine() {
 			p.nextToken()
-			subroutine := p.parseSubroutineBodyDec()
+			subroutine := p.parseSubroutineDec(subErrTokens...)
 			if subroutine != nil {
 				classDec.Subroutines = append(classDec.Subroutines, subroutine)
 			}
 		} else {
-			p.expectedErr("expected method or function or constructor or static or field",
+			p.expectedErr("one of {method, function, constructor, static, field}",
 				p.peekToken)
+			p.skipToNext(classErrTokens...)
 		}
-		fmt.Println(p.curToken)
 	}
 
 	if !p.peekTokenIs(token.RBRACE) {
 		p.expectedErr("}", p.peekToken)
 		return nil
 	}
+	p.nextToken()
 	return classDec
 }
 
@@ -408,7 +452,7 @@ func (p *Parser) parseMethodCall(varName ast.Expression) ast.Expression {
 
 	if !p.peekTokenIs(token.IDENT) {
 		p.expectedErr("Identifier", p.peekToken)
-		p.skipToNextSta(token.SEMICO)
+		p.skipToNext(statementTokens...)
 		return nil
 	}
 	precedence := precedences[p.curToken.Type]
@@ -418,14 +462,14 @@ func (p *Parser) parseMethodCall(varName ast.Expression) ast.Expression {
 }
 
 // let Name ('[' Index ']')? = Expression
-func (p *Parser) parseLetStatement() *ast.LetSta {
+func (p *Parser) parseLetStatement(skipTo ...token.TokenType) *ast.LetSta {
 	letSta := &ast.LetSta{
 		Token: p.curToken, // let
 	}
 
 	if !p.peekTokenIs(token.IDENT) {
 		p.expectedIdentifierErr(p.peekToken)
-		p.skipToNextSta(token.SEMICO)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 
@@ -441,7 +485,9 @@ func (p *Parser) parseLetStatement() *ast.LetSta {
 	}
 
 	if !p.peekTokenIs(token.EQ) {
+		fmt.Printf("%+v\n", p.peekToken)
 		p.expectedErr("=", p.peekToken)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 
@@ -449,13 +495,14 @@ func (p *Parser) parseLetStatement() *ast.LetSta {
 	p.nextToken()
 	exp := p.parseExpression(LOWEST)
 	if exp == nil || reflect.ValueOf(exp).IsZero() {
+		p.skipToNext(skipTo...)
 		return nil
 	}
 
 	letSta.Expression = exp
 	if !p.peekTokenIs(token.SEMICO) {
 		p.expectedErr(";", p.peekToken)
-		p.skipToNextSta()
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -485,19 +532,18 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 // } (else {
 //    statements
 // })?
-func (p *Parser) parseIfElseSta() *ast.IfElseSta {
+func (p *Parser) parseIfElseSta(skipTo ...token.TokenType) *ast.IfElseSta {
 	ifElse := &ast.IfElseSta{
-		Token: p.curToken,
+		Token: p.curToken, // if
 	}
 
-	expErr := func(exp string, got token.Token) {
+	handleErr := func(exp string, got token.Token) {
 		p.expectedErr(exp, got)
-		p.skipToNextSta()
+		p.skipToNext(skipTo...)
 	}
 
 	if !p.peekTokenIs(token.LPAREN) {
-		expErr("(", p.peekToken)
-		p.skipToNextSta()
+		handleErr("(", p.peekToken)
 		return nil
 	}
 
@@ -505,42 +551,38 @@ func (p *Parser) parseIfElseSta() *ast.IfElseSta {
 	p.nextToken()
 	condition := p.parseExpression(LOWEST)
 	if condition == nil || reflect.ValueOf(condition).IsZero() {
-		p.skipToNextSta()
+		// parseExpression will add error, so no need to addError
+		p.skipToNext(skipTo...)
 		return nil
 	}
 
 	ifElse.Condition = condition
 
 	if !p.peekTokenIs(token.RPAREN) {
-		expErr(")", p.peekToken)
-		p.skipToNextSta()
+		handleErr(")", p.peekToken)
 		return nil
 	}
 	p.nextToken()
 
 	if !p.peekTokenIs(token.LBRACE) {
-		expErr("{", p.peekToken)
-		p.skipToNextSta()
+		handleErr("{", p.peekToken)
 		return nil
 	}
 	p.nextToken()
-	ifElse.Then = p.parseStatementBlock()
+	ifElse.Then = p.parseStatementBlock(skipTo...)
 	if ifElse.Then == nil {
-		p.skipToNextSta()
 		return nil
 	}
 
 	if p.peekTokenIs(token.ELSE) {
 		p.nextToken()
 		if !p.peekTokenIs(token.LBRACE) {
-			expErr("{", p.peekToken)
-			p.skipToNextSta()
+			handleErr("{", p.peekToken)
 			return nil
 		}
 		p.nextToken()
-		ifElse.Else = p.parseStatementBlock()
+		ifElse.Else = p.parseStatementBlock(skipTo...)
 		if ifElse.Else == nil {
-			p.skipToNextSta()
 			return nil
 		}
 	}
@@ -548,14 +590,14 @@ func (p *Parser) parseIfElseSta() *ast.IfElseSta {
 }
 
 // { statement1; statement2; ... statementN; }
-func (p *Parser) parseStatementBlock() *ast.StatementBlockSta {
+func (p *Parser) parseStatementBlock(skipTo ...token.TokenType) *ast.StatementBlockSta {
 	stmtBlock := &ast.StatementBlockSta{
 		Token: p.curToken, // {
 	}
 
-	for p.peekStatement() {
+	for p.peekStatement() { // if, while, do and return
 		p.nextToken()
-		stmt := p.parseStatement()
+		stmt := p.parseStatement(skipTo...)
 		if stmt != nil && !reflect.ValueOf(stmt).IsZero() {
 			stmtBlock.Statements = append(stmtBlock.Statements, stmt)
 		}
@@ -563,21 +605,21 @@ func (p *Parser) parseStatementBlock() *ast.StatementBlockSta {
 
 	if !p.peekTokenIs(token.RBRACE) {
 		p.expectedErr("}", p.peekToken)
-		p.skipToNextSta()
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
 	return stmtBlock
 }
 
-func (p *Parser) parseWhileSta() *ast.WhileSta {
+func (p *Parser) parseWhileSta(skipTo ...token.TokenType) *ast.WhileSta {
 	whileSta := &ast.WhileSta{
-		Token: p.curToken,
+		Token: p.curToken, // while
 	}
 
 	if !p.peekTokenIs(token.LPAREN) {
 		p.expectedErr("(", p.peekToken)
-		p.skipToNextSta()
+		p.skipToNext(skipTo...)
 		return nil
 	}
 
@@ -585,36 +627,43 @@ func (p *Parser) parseWhileSta() *ast.WhileSta {
 	p.nextToken()
 	condition := p.parseExpression(LOWEST)
 	if condition == nil || reflect.ValueOf(condition).IsZero() {
-		p.skipToNextSta()
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	whileSta.Condition = condition
 	if !p.peekTokenIs(token.RPAREN) {
 		p.expectedErr(")", p.peekToken)
-		p.skipToNextSta()
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
+
+	if !p.peekTokenIs(token.LBRACE) {
+		p.expectedErr("{", p.peekToken)
+		p.skipToNext(skipTo...)
+		return nil
+	}
+
 	p.nextToken()
-	whileSta.Statements = p.parseStatementBlock()
+	whileSta.Statements = p.parseStatementBlock(skipTo...)
 	if whileSta.Statements == nil {
-		p.skipToNextSta()
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	return whileSta
 }
 
 // return; return Expression;
-func (p *Parser) parseReturnSta() *ast.ReturnSta {
+func (p *Parser) parseReturnSta(skipTo ...token.TokenType) *ast.ReturnSta {
 	returnSta := &ast.ReturnSta{
-		Token: p.curToken,
+		Token: p.curToken, // return
 	}
 
 	if !p.peekTokenIs(token.SEMICO) {
 		p.nextToken()
 		exp := p.parseExpression(LOWEST)
 		if exp == nil || reflect.ValueOf(exp).IsZero() {
-			p.skipToNextSta()
+			p.skipToNext(skipTo...)
 			return nil
 		}
 		returnSta.Expression = exp
@@ -622,7 +671,7 @@ func (p *Parser) parseReturnSta() *ast.ReturnSta {
 
 	if !p.peekTokenIs(token.SEMICO) {
 		p.expectedErr(";", p.peekToken)
-		p.skipToNextSta()
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -638,11 +687,14 @@ func (p *Parser) parseArrayIndex(left ast.Expression) ast.Expression {
 	}
 
 	p.nextToken()
-	arrayIndex.Right = p.parseExpression(CALL_INDEX_PERIOD)
+	exp := p.parseExpression(CALL_INDEX_PERIOD)
+	if exp == nil || reflect.ValueOf(exp).IsZero() {
+		return nil
+	}
+	arrayIndex.Right = exp
 
 	if !p.peekTokenIs(token.RBRACK) {
 		p.expectedErr("]", p.peekToken)
-		p.skipToNextSta()
 		return nil
 	}
 	p.nextToken()
@@ -665,31 +717,34 @@ func (p *Parser) parseKeywordConstantExp() ast.Expression {
 
 // parses: expression0, expression1, ... expresssionN
 // if it encounters an error while parsing ith expression
-// it will skip to one of the 'skipTo' tokens, continues for more errors
+// it will skip to one of the 'skipTo' tokens, continues
+// greedily for more errors
 func (p *Parser) parseExpressionList(skipTo ...token.TokenType) ast.Expression {
 	expList := &ast.ExpressionListExp{
 		Token: p.curToken,
 	}
 	err := false
+	errRec := []token.TokenType{token.COMMA} // greedy move
+	errRec = append(errRec, skipTo...)
 
 	exp := p.parseExpression(LOWEST)
-	if exp != nil && !reflect.ValueOf(exp).IsZero() {
-		expList.Expressions = append(expList.Expressions, exp)
-	} else {
-		p.skipToNextSta(skipTo...)
+	if exp == nil || reflect.ValueOf(exp).IsZero() {
+		p.skipToNext(errRec...)
 		err = true
 	}
+
+	expList.Expressions = append(expList.Expressions, exp)
 
 	for p.peekTokenIs(token.COMMA) {
 		p.nextToken()
 		p.nextToken()
 		exp := p.parseExpression(LOWEST)
-		if exp != nil && !reflect.ValueOf(exp).IsZero() {
-			expList.Expressions = append(expList.Expressions, exp)
-		} else {
+		if exp == nil || reflect.ValueOf(exp).IsZero() {
 			err = true
-			p.skipToNextSta(skipTo...)
+			p.skipToNext(errRec...)
+			continue
 		}
+		expList.Expressions = append(expList.Expressions, exp)
 	}
 	if err {
 		return nil
@@ -734,10 +789,15 @@ func (p *Parser) parseSubroutineCall(leftExp ast.Expression) ast.Expression {
 	}
 
 	p.nextToken()
-	subCall.Right = p.parseExpressionList()
-	if !p.peekTokenIs(token.RPAREN) {
+	expList := p.parseExpressionList(token.RPAREN)
+	if expList == nil || reflect.ValueOf(expList).IsZero() {
+		return nil
+	}
+
+	subCall.Right = expList
+
+	if !p.peekTokenIs(token.RPAREN) { // skipping tokens will be done by callee
 		p.expectedErr(")", p.peekToken)
-		p.skipToNextSta()
 		return nil
 	}
 	p.nextToken()
@@ -749,29 +809,29 @@ func (p *Parser) parseGroupExp() ast.Expression {
 	exp := p.parseExpression(LOWEST)
 	if !p.peekTokenIs(token.RPAREN) {
 		p.expectedErr(")", p.peekToken)
-		p.skipToNextSta()
 		return nil
 	}
 	p.nextToken()
 	return exp
 }
 
-func (p *Parser) parseDoSta() *ast.DoSta {
+func (p *Parser) parseDoSta(skipTo ...token.TokenType) *ast.DoSta {
 	doSta := &ast.DoSta{
-		Token: p.curToken,
+		Token: p.curToken, // do
 	}
 
 	p.nextToken()
 	doSta.SubCall = p.parseExpression(LOWEST)
 	if !p.peekTokenIs(token.SEMICO) {
 		p.expectedErr(";", p.peekToken)
-		p.skipToNextSta()
+		p.skipToNext(skipTo...)
 		return nil
 	}
+	p.nextToken()
 	return doSta
 }
 
-func (p *Parser) parseParameterDec() *ast.ParameterDec {
+func (p *Parser) parseParameterDec(skipTo ...token.TokenType) *ast.ParameterDec {
 	parameter := &ast.ParameterDec{
 		Token:    p.curToken,
 		DataType: p.curToken.Literal,
@@ -779,7 +839,7 @@ func (p *Parser) parseParameterDec() *ast.ParameterDec {
 
 	if !p.peekTokenIs(token.IDENT) {
 		p.expectedIdentifierErr(p.peekToken)
-		p.skipToNextSta(token.COMMA, token.LPAREN)
+		p.skipToNextSub(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -790,27 +850,28 @@ func (p *Parser) parseParameterDec() *ast.ParameterDec {
 	return parameter
 }
 
-func (p *Parser) parseParameterListDec() []*ast.ParameterDec {
+func (p *Parser) parseParameterListDec(skipTo ...token.TokenType) []*ast.ParameterDec {
 	parameters := []*ast.ParameterDec{}
+	errRec := []token.TokenType{token.COMMA}
+	errRec = append(errRec, skipTo...)
 	err := false
 
 	parameter := p.parseParameterDec()
-	if parameter != nil {
-		parameters = append(parameters, parameter)
-	} else {
+	if parameter == nil {
 		err = true
 	}
+	parameters = append(parameters, parameter)
 
 	for p.peekTokenIs(token.COMMA) {
 		p.nextToken()
 		if !canBeType(p.peekToken) {
 			p.expectedTypeErr(p.peekToken)
-			p.skipToNextSta(token.COMMA, token.LPAREN)
+			p.skipToNext(errRec...)
 			err = true
 			continue
 		}
 		p.nextToken()
-		parameter = p.parseParameterDec()
+		parameter = p.parseParameterDec(errRec...)
 		if parameter == nil {
 			err = true
 			continue
@@ -823,15 +884,15 @@ func (p *Parser) parseParameterListDec() []*ast.ParameterDec {
 	return parameters
 }
 
-func (p *Parser) parseSubroutineDec() *ast.SubroutineDec {
+func (p *Parser) parseSubroutineDec(skipTo ...token.TokenType) *ast.SubroutineDec {
 	subroutine := &ast.SubroutineDec{
 		Token: p.curToken,
-		Type:  p.curToken.Literal,
+		Type:  p.curToken.Literal, // function, method and constructor
 	}
 
 	if !canBeType(p.peekToken) {
 		p.expectedTypeErr(p.peekToken)
-		p.skipToNextSta(token.LBRACE)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -839,7 +900,7 @@ func (p *Parser) parseSubroutineDec() *ast.SubroutineDec {
 
 	if !p.peekTokenIs(token.IDENT) {
 		p.expectedIdentifierErr(p.peekToken)
-		p.skipToNextSta(token.LBRACE)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -850,57 +911,101 @@ func (p *Parser) parseSubroutineDec() *ast.SubroutineDec {
 
 	if !p.peekTokenIs(token.LPAREN) {
 		p.expectedErr("(", p.peekToken)
-		p.skipToNextSta(token.LBRACE)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
-	if p.peekTokenIs(token.RPAREN) { // zero parameters
+	if !p.peekTokenIs(token.RPAREN) { // non zero parameters
+		if !canBeType(p.peekToken) {
+			p.expectedTypeErr(p.peekToken)
+			p.skipToNext(skipTo...)
+			return nil
+		}
+
 		p.nextToken()
-		return subroutine
+		buf := []token.TokenType{token.RPAREN}
+		buf = append(buf, skipTo...)
+		params := p.parseParameterListDec(buf...)
+		if !p.peekTokenIs(token.RPAREN) { // lets try to continue, finger crossed
+			return nil
+		}
+		subroutine.Parameters = params
 	}
 
-	if !canBeType(p.peekToken) {
-		p.expectedTypeErr(p.peekToken)
-		p.skipToNextSta(token.LBRACE)
-		return nil
-	}
-
-	p.nextToken()
-	subroutine.Parameters = p.parseParameterListDec()
 	if !p.peekTokenIs(token.RPAREN) {
 		p.expectedErr(")", p.peekToken)
-		p.skipToNextSta(token.LBRACE)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
-	subroutine.Body = *p.parseSubroutineBodyDec()
 
+	if !p.peekTokenIs(token.LBRACE) {
+		p.expectedErr("{", p.peekToken)
+		p.skipToNext(skipTo...)
+		return nil
+	}
+	p.nextToken()
+
+	subroutine.Body = p.parseSubroutineBodyDec(skipTo...)
 	return subroutine
 }
 
-func (p *Parser) parseSubroutineBodyDec() *ast.SubroutineBodyDec {
+func (p *Parser) peekForVar() bool {
+	t := p.peekToken.Type
+	if t == token.STATIC || t == token.FIELD {
+		errMsg := "cannot declare " + red(p.peekToken.Literal) + " variables in subroutines"
+		p.addError(errMsg, p.peekToken)
+
+		return false
+	}
+	return t == token.VAR
+}
+
+func (p *Parser) parseSubroutineBodyDec(skipTo ...token.TokenType) *ast.SubroutineBodyDec {
 	body := &ast.SubroutineBodyDec{
 		Token: p.curToken, // {
 	}
 
-	for !p.peekTokenIs(token.LBRACE) && !p.peekTokenIs(token.EOF) {
-		if p.peekStatement() || p.peekTokenIs(token.VAR) {
+	errRec := []token.TokenType{
+		token.LET,
+		token.WHILE,
+		token.IF,
+		token.RETURN,
+		token.DO,
+		token.VAR,
+		token.RBRACE,
+	}
+	errRec = append(errRec, skipTo...)
+
+	for !p.peekTokenIs(token.RBRACE) && !p.peekSubroutine() && !p.peekTokenIs(token.EOF) {
+		switch {
+		case p.peekForVar():
 			p.nextToken()
-			if p.curToken.Type == token.VAR {
-				varDec := p.parseVarDec()
-				if varDec != nil {
-					body.VarDecs = append(body.VarDecs, varDec)
-				}
-			} else {
-				stmt := p.parseStatement()
-				if stmt != nil && !reflect.ValueOf(stmt).IsZero() {
-					body.Statements = append(body.Statements, stmt)
-				}
+			varDec := p.parseVarDec(errRec...)
+			if varDec == nil {
+				continue
 			}
-		} else {
-			p.expectedErr("var or do or if or while or return", p.peekToken)
-			p.skipToNextSta(token.LBRACE)
+			body.VarDecs = append(body.VarDecs, varDec)
+		case p.peekStatement():
+			p.nextToken()
+			stmt := p.parseStatement(errRec...)
+			if stmt == nil || reflect.ValueOf(stmt).IsZero() {
+				continue
+			}
+			body.Statements = append(body.Statements, stmt)
+		default:
+			p.expectedErr("one of {var, do , if, while, return}", p.peekToken)
+			p.skipToNext(classErrTokens...)
+			return nil
 		}
 	}
+
+	if !p.peekTokenIs(token.RBRACE) {
+		fmt.Println("this one??")
+		p.expectedErr("}", p.peekToken)
+		p.skipToNext(skipTo...)
+		return nil
+	}
+	p.nextToken()
 	return body
 }
