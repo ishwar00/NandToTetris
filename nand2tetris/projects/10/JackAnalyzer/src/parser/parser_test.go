@@ -11,376 +11,375 @@ import (
 )
 
 func TestSubroutineBodyDec(t *testing.T) {
-    tests := []struct {
-        input string
-        expbody *ast.SubroutineBodyDec
-    }{
-        {
-            input: "{ var int a; return; return 3; }",
-            expbody: &ast.SubroutineBodyDec{
-                Token: token.Token{
-                    Literal: "{",
-                    Type: token.LBRACE,
-                },
-                VarDecs: []*ast.VarDec{
-                    { 
-                        Token: token.Token{
-                            Literal: "var",
-                            Type: token.VAR,
-                            OnColumn: 2,
-                        },
-                        DataType: token.Token{
-                            Literal: "int",
-                            Type: token.INT,
-                            OnColumn: 6,
-                        },
-                        IdentifierExps: []*ast.IdentifierExp{
-                            { 
-                                Token: token.Token{
-                                    Literal: "a",
-                                    Type: token.IDENT,
-                                    OnColumn: 10,
-                                },
-                                Value: "a",
-                            },
-                        },
-                    },
-                },
-                Statements: []ast.Statement{
-                    &ast.ReturnSta{
-                        Token: token.Token{
-                            Literal: "return",
-                            Type: token.RETURN,
-                            OnColumn: 13,
-                        },
-                    },
-                    &ast.ReturnSta{
-                        Token: token.Token{
-                            Literal: "return",
-                            Type: token.RETURN,
-                            OnColumn: 21,
-                        },
-                        Expression: &ast.IntConstExp{
-                            Token: token.Token{
-                                Literal: "3",
-                                Type: token.INT_CONST,
-                                OnColumn: 28,
-                            },
-                            Value: 3,
-                        },
-                    },
-                },
-            },
-        },
-    }
+	tests := []struct {
+		input   string
+		expbody *ast.SubroutineBodyDec
+	}{
+		{
+			input: "{ var int a; return; return 3; }",
+			expbody: &ast.SubroutineBodyDec{
+				Token: token.Token{
+					Literal: "{",
+					Type:    token.LBRACE,
+				},
+				VarDecs: []*ast.VarDec{
+					{
+						Token: token.Token{
+							Literal:  "var",
+							Type:     token.VAR,
+							OnColumn: 2,
+						},
+						DataType: token.Token{
+							Literal:  "int",
+							Type:     token.INT,
+							OnColumn: 6,
+						},
+						IdentifierExps: []*ast.IdentifierExp{
+							{
+								Token: token.Token{
+									Literal:  "a",
+									Type:     token.IDENT,
+									OnColumn: 10,
+								},
+								Value: "a",
+							},
+						},
+					},
+				},
+				Statements: []ast.Statement{
+					&ast.ReturnSta{
+						Token: token.Token{
+							Literal:  "return",
+							Type:     token.RETURN,
+							OnColumn: 13,
+						},
+					},
+					&ast.ReturnSta{
+						Token: token.Token{
+							Literal:  "return",
+							Type:     token.RETURN,
+							OnColumn: 21,
+						},
+						Expression: &ast.IntConstExp{
+							Token: token.Token{
+								Literal:  "3",
+								Type:     token.INT_CONST,
+								OnColumn: 28,
+							},
+							Value: 3,
+						},
+					},
+				},
+			},
+		},
+	}
 
-    for i, tt := range tests {
-        l := lexer.LexString(tt.input)
-        p := New(l)
-        body := p.parseSubroutineBodyDec()
-        if body == nil {
-            t.Fatalf("tests[%d]: body is nil", i)
-        }
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		body := p.parseSubroutineBodyDec()
+		if body == nil {
+			t.Fatalf("tests[%d]: body is nil", i)
+		}
 
-        if !reflect.DeepEqual(body, tt.expbody) {
-            t.Fatalf("tests[%d]: body is not \n%+v, got=\n%+v", i, *tt.expbody, *body)
-        }
-    }
+		if !reflect.DeepEqual(body, tt.expbody) {
+			t.Fatalf("tests[%d]: body is not \n%+v, got=\n%+v", i, *tt.expbody, *body)
+		}
+	}
 }
 
 func TestSubroutineDec(t *testing.T) {
-    tests := []struct {
-        input string
-        expSubroutineDec *ast.SubroutineDec
-    }{
-        {
-            input: "constructor int main()",
-            expSubroutineDec: &ast.SubroutineDec{
-                Token: token.Token{
-                    Literal: "constructor",
-                    Type: token.CONSTRUCTOR,
-                },
-                Type: "constructor",
-                ReturnType: token.Token{
-                    Literal: "int",
-                    Type: token.INT,
-                    OnColumn: 12,
-                },
-                SubName: &ast.IdentifierExp{
-                    Token: token.Token{
-                        Literal: "main",
-                        Type: token.IDENT,
-                        OnColumn: 16,
-                    },
-                    Value: "main",
-                },
-            },
-        },
-        {
-            input: "method Ball add(int n, string foo, Block block)",
-            expSubroutineDec: &ast.SubroutineDec{
-                Token: token.Token{
-                    Literal: "method",
-                    Type: token.METHOD,
-                },
-                Type: "method",
-                ReturnType: token.Token{
-                    Literal: "Ball",
-                    Type: token.IDENT,
-                    OnColumn: 7,
-                },
-                SubName: &ast.IdentifierExp{
-                    Token: token.Token{
-                        Literal: "add",
-                        Type: token.IDENT,
-                        OnColumn: 12,
-                    },
-                    Value: "add",
-                },
-                Parameters: []*ast.ParameterDec{
-                    {
-                        Token: token.Token{
-                            Literal: "int",
-                            Type: token.INT,
-                            OnColumn: 16,
-                        },
-                        DataType: "int",
-                        Identifier: &ast.IdentifierExp{
-                            Token: token.Token{
-                                Literal: "n",
-                                Type: token.IDENT,
-                                OnColumn: 20,
-                            },
-                            Value: "n",
-                        },
-                    },
-                    {
-                        Token: token.Token{
-                            Literal: "string",
-                            Type: token.IDENT,
-                            OnColumn: 23,
-                        },
-                        DataType: "string",
-                        Identifier: &ast.IdentifierExp{
-                            Token: token.Token{
-                                Literal: "foo",
-                                Type: token.IDENT,
-                                OnColumn: 30,
-                            },
-                            Value: "foo",
-                        },
-                    },
-                    {
-                        Token: token.Token{
-                            Literal: "Block",
-                            Type: token.IDENT,
-                            OnColumn: 35,
-                        },
-                        DataType: "Block",
-                        Identifier: &ast.IdentifierExp{
-                            Token: token.Token{
-                                Literal: "block",
-                                Type: token.IDENT,
-                                OnColumn: 41,
-                            },
-                            Value: "block",
-                        },
-                    },
-                },
-            },
-        },
-    }
+	tests := []struct {
+		input            string
+		expSubroutineDec *ast.SubroutineDec
+	}{
+		{
+			input: "constructor int main()",
+			expSubroutineDec: &ast.SubroutineDec{
+				Token: token.Token{
+					Literal: "constructor",
+					Type:    token.CONSTRUCTOR,
+				},
+				Type: "constructor",
+				ReturnType: token.Token{
+					Literal:  "int",
+					Type:     token.INT,
+					OnColumn: 12,
+				},
+				SubName: &ast.IdentifierExp{
+					Token: token.Token{
+						Literal:  "main",
+						Type:     token.IDENT,
+						OnColumn: 16,
+					},
+					Value: "main",
+				},
+			},
+		},
+		{
+			input: "method Ball add(int n, string foo, Block block)",
+			expSubroutineDec: &ast.SubroutineDec{
+				Token: token.Token{
+					Literal: "method",
+					Type:    token.METHOD,
+				},
+				Type: "method",
+				ReturnType: token.Token{
+					Literal:  "Ball",
+					Type:     token.IDENT,
+					OnColumn: 7,
+				},
+				SubName: &ast.IdentifierExp{
+					Token: token.Token{
+						Literal:  "add",
+						Type:     token.IDENT,
+						OnColumn: 12,
+					},
+					Value: "add",
+				},
+				Parameters: []*ast.ParameterDec{
+					{
+						Token: token.Token{
+							Literal:  "int",
+							Type:     token.INT,
+							OnColumn: 16,
+						},
+						DataType: "int",
+						Identifier: &ast.IdentifierExp{
+							Token: token.Token{
+								Literal:  "n",
+								Type:     token.IDENT,
+								OnColumn: 20,
+							},
+							Value: "n",
+						},
+					},
+					{
+						Token: token.Token{
+							Literal:  "string",
+							Type:     token.IDENT,
+							OnColumn: 23,
+						},
+						DataType: "string",
+						Identifier: &ast.IdentifierExp{
+							Token: token.Token{
+								Literal:  "foo",
+								Type:     token.IDENT,
+								OnColumn: 30,
+							},
+							Value: "foo",
+						},
+					},
+					{
+						Token: token.Token{
+							Literal:  "Block",
+							Type:     token.IDENT,
+							OnColumn: 35,
+						},
+						DataType: "Block",
+						Identifier: &ast.IdentifierExp{
+							Token: token.Token{
+								Literal:  "block",
+								Type:     token.IDENT,
+								OnColumn: 41,
+							},
+							Value: "block",
+						},
+					},
+				},
+			},
+		},
+	}
 
-    for i, tt := range tests {
-        l := lexer.LexString(tt.input)
-        p := New(l)
-        subroutine := p.parseSubroutineDec()
-        if subroutine == nil {
-            t.Fatalf("tests[%d]: subroutine is nil", i)
-        }
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		subroutine := p.parseSubroutineDec()
+		if subroutine == nil {
+			t.Fatalf("tests[%d]: subroutine is nil", i)
+		}
 
-        if !reflect.DeepEqual(subroutine, tt.expSubroutineDec) {
-            t.Fatalf("tests[%d]: subroutine is not \n%+v, got=\n%+v", 
-            i, *tt.expSubroutineDec.Parameters[1], *subroutine.Parameters[1])
-        }
-    }
+		if !reflect.DeepEqual(subroutine, tt.expSubroutineDec) {
+			t.Fatalf("tests[%d]: subroutine is not \n%+v, got=\n%+v",
+				i, *tt.expSubroutineDec.Parameters[1], *subroutine.Parameters[1])
+		}
+	}
 }
 
 func TestParameterListDec(t *testing.T) {
-    tests := []struct {
-        input string
-        expParamList []*ast.ParameterDec
-    }{
-        {
-            input: "int a",
-            expParamList: []*ast.ParameterDec{
-                {
-                    Token: token.Token{
-                        Literal: "int",
-                        Type: token.INT,
-                    },
-                    DataType: "int",
-                    Identifier: &ast.IdentifierExp{
-                        Token: token.Token{
-                            Literal: "a",
-                            Type: token.IDENT,
-                            OnColumn: 4,
-                        },
-                        Value: "a",
-                    },
-                },
-            },
-        },
-        {
-            input: "int a, Ball b, boolean c",
-            expParamList: []*ast.ParameterDec{
-                {
-                    Token: token.Token{
-                        Literal: "int",
-                        Type: token.INT,
-                    },
-                    DataType: "int",
-                    Identifier: &ast.IdentifierExp{
-                        Token: token.Token{
-                            Literal: "a",
-                            Type: token.IDENT,
-                            OnColumn: 4,
-                        },
-                        Value: "a",
-                    },
-                },
-                {
-                    Token: token.Token{
-                        Literal: "Ball",
-                        Type: token.IDENT,
-                        OnColumn: 7,
-                    },
-                    DataType: "Ball",
-                    Identifier: &ast.IdentifierExp{
-                        Token: token.Token{
-                            Literal: "b",
-                            Type: token.IDENT,
-                            OnColumn: 12,
-                        },
-                        Value: "b",
-                    },
-                },
-                {
-                    Token: token.Token{
-                        Literal: "boolean",
-                        Type: token.BOOLEAN,
-                        OnColumn: 15,
-                    },
-                    DataType: "boolean",
-                    Identifier: &ast.IdentifierExp{
-                        Token: token.Token{
-                            Literal: "c",
-                            Type: token.IDENT,
-                            OnColumn: 23,
-                        },
-                        Value: "c",
-                    },
-                },
-            },
-        },
-    }
+	tests := []struct {
+		input        string
+		expParamList []*ast.ParameterDec
+	}{
+		{
+			input: "int a",
+			expParamList: []*ast.ParameterDec{
+				{
+					Token: token.Token{
+						Literal: "int",
+						Type:    token.INT,
+					},
+					DataType: "int",
+					Identifier: &ast.IdentifierExp{
+						Token: token.Token{
+							Literal:  "a",
+							Type:     token.IDENT,
+							OnColumn: 4,
+						},
+						Value: "a",
+					},
+				},
+			},
+		},
+		{
+			input: "int a, Ball b, boolean c",
+			expParamList: []*ast.ParameterDec{
+				{
+					Token: token.Token{
+						Literal: "int",
+						Type:    token.INT,
+					},
+					DataType: "int",
+					Identifier: &ast.IdentifierExp{
+						Token: token.Token{
+							Literal:  "a",
+							Type:     token.IDENT,
+							OnColumn: 4,
+						},
+						Value: "a",
+					},
+				},
+				{
+					Token: token.Token{
+						Literal:  "Ball",
+						Type:     token.IDENT,
+						OnColumn: 7,
+					},
+					DataType: "Ball",
+					Identifier: &ast.IdentifierExp{
+						Token: token.Token{
+							Literal:  "b",
+							Type:     token.IDENT,
+							OnColumn: 12,
+						},
+						Value: "b",
+					},
+				},
+				{
+					Token: token.Token{
+						Literal:  "boolean",
+						Type:     token.BOOLEAN,
+						OnColumn: 15,
+					},
+					DataType: "boolean",
+					Identifier: &ast.IdentifierExp{
+						Token: token.Token{
+							Literal:  "c",
+							Type:     token.IDENT,
+							OnColumn: 23,
+						},
+						Value: "c",
+					},
+				},
+			},
+		},
+	}
 
-    for i, tt := range tests {
-        l := lexer.LexString(tt.input)
-        p := New(l)
-        pl := p.parseParameterListDec()
-        if pl == nil {
-            t.Fatalf("tests[%d]: pl is nil", i)
-        }
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		pl := p.parseParameterListDec()
+		if pl == nil {
+			t.Fatalf("tests[%d]: pl is nil", i)
+		}
 
-        if !reflect.DeepEqual(pl, tt.expParamList) {
-            t.Fatalf("tests[%d]: pl is not '%+v', got=%+v", i, tt.expParamList, pl)
-        }
-    }
+		if !reflect.DeepEqual(pl, tt.expParamList) {
+			t.Fatalf("tests[%d]: pl is not '%+v', got=%+v", i, tt.expParamList, pl)
+		}
+	}
 }
 
 func TestParseParameterDec(t *testing.T) {
-    tests := []struct {
-        input string
-        expParameterDec *ast.ParameterDec
-    }{
-        {
-            input: "int p",
-            expParameterDec: &ast.ParameterDec{
-                Token: token.Token{
-                    Literal: "int",
-                    Type: token.INT,
-                },
-                DataType: "int",
-                Identifier: &ast.IdentifierExp{
-                    Token: token.Token{
-                        Literal: "p",
-                        Type: token.IDENT,
-                        OnColumn: 4,
-                    },
-                    Value: "p",
-                },
-            },
-        },
-    }
+	tests := []struct {
+		input           string
+		expParameterDec *ast.ParameterDec
+	}{
+		{
+			input: "int p",
+			expParameterDec: &ast.ParameterDec{
+				Token: token.Token{
+					Literal: "int",
+					Type:    token.INT,
+				},
+				DataType: "int",
+				Identifier: &ast.IdentifierExp{
+					Token: token.Token{
+						Literal:  "p",
+						Type:     token.IDENT,
+						OnColumn: 4,
+					},
+					Value: "p",
+				},
+			},
+		},
+	}
 
-    for i, tt := range tests {
-        l := lexer.LexString(tt.input)
-        p := New(l)
-        parameter := p.parseParameterDec()
-        if parameter == nil {
-            t.Fatalf("tests[%d]: parameter is nil ", i)
-        }
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		parameter := p.parseParameterDec()
+		if parameter == nil {
+			t.Fatalf("tests[%d]: parameter is nil ", i)
+		}
 
-        if !reflect.DeepEqual(parameter, tt.expParameterDec) {
-            t.Fatalf("tests[%d]: parameter is not %+v, got=%+v", 
-            i, parameter, tt.expParameterDec)
-        }
-    }
+		if !reflect.DeepEqual(parameter, tt.expParameterDec) {
+			t.Fatalf("tests[%d]: parameter is not %+v, got=%+v",
+				i, parameter, tt.expParameterDec)
+		}
+	}
 }
 
 func TestDoSta(t *testing.T) {
-    tests := []struct {
-        input string
-        expDoSta *ast.DoSta 
-    }{
-        {
-            input: "do call();",
-            expDoSta: &ast.DoSta{
-                Token: token.Token{
-                    Literal: "do",
-                    Type: token.DO,
-                },
-                SubCall: &ast.InfixExp{
-                    Token: token.Token{
-                        Literal: "(",
-                        Type: token.LPAREN,
-                        OnColumn: 7,
-                    },
-                    Left: &ast.IdentifierExp{
-                        Token: token.Token{
-                            Literal: "call",
-                            Type: token.IDENT,
-                            OnColumn: 3,
-                        },
-                        Value: "call",
-                    },
-                    Operator: "(",
-                },
-            },
+	tests := []struct {
+		input    string
+		expDoSta *ast.DoSta
+	}{
+		{
+			input: "do call();",
+			expDoSta: &ast.DoSta{
+				Token: token.Token{
+					Literal: "do",
+					Type:    token.DO,
+				},
+				SubCall: &ast.InfixExp{
+					Token: token.Token{
+						Literal:  "(",
+						Type:     token.LPAREN,
+						OnColumn: 7,
+					},
+					Left: &ast.IdentifierExp{
+						Token: token.Token{
+							Literal:  "call",
+							Type:     token.IDENT,
+							OnColumn: 3,
+						},
+						Value: "call",
+					},
+					Operator: "(",
+				},
+			},
+		},
+	}
 
-        },
-    }
+	for i, tt := range tests {
+		l := lexer.LexString(tt.input)
+		p := New(l)
+		doSta := p.parseDoSta()
 
-    for i, tt := range tests {
-        l := lexer.LexString(tt.input)
-        p := New(l)
-        doSta := p.parseDoSta()
-
-        if !reflect.DeepEqual(doSta, tt.expDoSta) {
-            t.Fatalf("tests[%d]: doSta is not %+v, got=%+v", i, tt.expDoSta, doSta)
-        }
-    }
+		if !reflect.DeepEqual(doSta, tt.expDoSta) {
+			t.Fatalf("tests[%d]: doSta is not %+v, got=%+v", i, tt.expDoSta, doSta)
+		}
+	}
 }
 
 func TestArithmeticExp(t *testing.T) {
@@ -484,46 +483,46 @@ func TestArithmeticExp(t *testing.T) {
 			"add(arr[0], \"str\", varName, call(A[index]))",
 			"add(arr[0],\"str\",varName,call(A[index]))",
 		},
-        {
-            "foo.bar.deep.source(4, 45 + bruh, totoro)",
-            "(((foo.bar).deep).source)(4,(45+bruh),totoro)",
-        },
-        {
-            "4 & 2 | 33",
-            "((4&2)|33)",
-        },
-        {
-            "1 & 5 + 88 * 4 | 5",
-            "((1&(5+(88*4)))|5)",
-        },
-        {
-            "a = null",
-            "(a=null)",
-        },
-        {
-            "true & true = true",
-            "(true&(true=true))",
-        },
-        {
-            "4 + 2 * 4 = 12",
-            "((4+(2*4))=12)",
-        },
-        {
-            "~true=false",
-            "((~true)=false)",
-        },
-        {
-            "~(true=false)", // that's != equivalent in Jack
-            "(~(true=false))",
-        },
-        {
-            "party()=true",
-            "(party()=true)",
-        },
-        {
-            "a() < b(\"dun dun\")",
-            "(a()<b(\"dun dun\"))",
-        },
+		{
+			"foo.bar.deep.source(4, 45 + bruh, totoro)",
+			"(((foo.bar).deep).source)(4,(45+bruh),totoro)",
+		},
+		{
+			"4 & 2 | 33",
+			"((4&2)|33)",
+		},
+		{
+			"1 & 5 + 88 * 4 | 5",
+			"((1&(5+(88*4)))|5)",
+		},
+		{
+			"a = null",
+			"(a=null)",
+		},
+		{
+			"true & true = true",
+			"(true&(true=true))",
+		},
+		{
+			"4 + 2 * 4 = 12",
+			"((4+(2*4))=12)",
+		},
+		{
+			"~true=false",
+			"((~true)=false)",
+		},
+		{
+			"~(true=false)", // that's != equivalent in Jack
+			"(~(true=false))",
+		},
+		{
+			"party()=true",
+			"(party()=true)",
+		},
+		{
+			"a() < b(\"dun dun\")",
+			"(a()<b(\"dun dun\"))",
+		},
 	}
 
 	for i, tt := range tests {

@@ -74,19 +74,19 @@ func (i *InfixExp) String() string {
 		"[": "]",
 	}
 
-    // okay may be DRY, but it is more readable
-    if c, ok := mp[i.Operator]; ok {
-        out.WriteString(i.Left.String())
-        out.WriteString(i.Operator)
-        if i.Right != nil {
-            out.WriteString(i.Right.String())
-        }
-        out.WriteString(c)
-    } else {
-        out.WriteString("(" + i.Left.String())
-        out.WriteString(i.Operator)
-        out.WriteString(i.Right.String() + ")")
-    }
+	// okay may be DRY, but it is more readable
+	if c, ok := mp[i.Operator]; ok {
+		out.WriteString(i.Left.String())
+		out.WriteString(i.Operator)
+		if i.Right != nil {
+			out.WriteString(i.Right.String())
+		}
+		out.WriteString(c)
+	} else {
+		out.WriteString("(" + i.Left.String())
+		out.WriteString(i.Operator)
+		out.WriteString(i.Right.String() + ")")
+	}
 
 	return out.String()
 }
@@ -104,7 +104,7 @@ func (s *StrConstExp) String() string {
 	if s == nil {
 		return ""
 	}
-    return "\"" + s.Value + "\""
+	return "\"" + s.Value + "\""
 }
 
 type KeywordConstExp struct {
