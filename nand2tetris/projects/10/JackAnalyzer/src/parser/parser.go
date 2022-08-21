@@ -26,12 +26,12 @@ var expErrRecToks = []token.TokenType{
 	token.IF,
 	token.RETURN,
 	token.DO,
-    token.STATIC,
-    token.FIELD,
-    token.VAR,
-    token.CONSTRUCTOR,
-    token.METHOD,
-    token.FUNCTION,
+	token.STATIC,
+	token.FIELD,
+	token.VAR,
+	token.CONSTRUCTOR,
+	token.METHOD,
+	token.FUNCTION,
 }
 
 type (
@@ -357,13 +357,13 @@ func (p *Parser) ParseClassDec() *ast.ClassDec {
 	}
 	p.nextToken()
 
-	errRecToks := []token.TokenType{ 
-        token.FIELD, 
-        token.STATIC, 
-        token.CONSTRUCTOR,
-        token.METHOD,
-        token.FUNCTION,
-    }
+	errRecToks := []token.TokenType{
+		token.FIELD,
+		token.STATIC,
+		token.CONSTRUCTOR,
+		token.METHOD,
+		token.FUNCTION,
+	}
 
 	for !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
 		if p.peekClassVarDec(errRecToks...) {
@@ -371,8 +371,8 @@ func (p *Parser) ParseClassDec() *ast.ClassDec {
 			if varDec := p.parseVarDec(); varDec != nil {
 				classDec.ClassVarDecs = append(classDec.ClassVarDecs, varDec)
 			} else {
-                p.skipToNext(errRecToks...)
-            }
+				p.skipToNext(errRecToks...)
+			}
 		} else if p.peekSubroutine() {
 			p.nextToken()
 			subroutine := p.parseSubroutineDec(errRecToks...)
@@ -568,9 +568,9 @@ func (p *Parser) parseStatementBlock(skipTo ...token.TokenType) *ast.StatementBl
 		p.nextToken()
 		stmt := p.parseStatement(skipTo...)
 		if stmt == nil || reflect.ValueOf(stmt).IsZero() {
-            continue
+			continue
 		}
-        stmtBlock.Statements = append(stmtBlock.Statements, stmt)
+		stmtBlock.Statements = append(stmtBlock.Statements, stmt)
 	}
 
 	if !p.peekTokenIs(token.RBRACE) {
@@ -952,7 +952,7 @@ func (p *Parser) parseSubroutineBodyDec(skipTo ...token.TokenType) *ast.Subrouti
 			p.nextToken()
 			varDec := p.parseVarDec()
 			if varDec == nil {
-                p.skipToNext(errRec...)
+				p.skipToNext(errRec...)
 				continue
 			}
 			body.VarDecs = append(body.VarDecs, varDec)
@@ -963,8 +963,8 @@ func (p *Parser) parseSubroutineBodyDec(skipTo ...token.TokenType) *ast.Subrouti
 				continue
 			}
 			body.Statements = append(body.Statements, stmt)
-        case p.peekSubroutine() || p.peekTokenIs(token.EOF):
-            return nil
+		case p.peekSubroutine() || p.peekTokenIs(token.EOF):
+			return nil
 		default:
 			p.expectedErr("one of {var, do , if, while, return}", p.peekToken)
 			p.skipToNext(skipTo...)
