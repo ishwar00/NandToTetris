@@ -38,7 +38,6 @@ func (e ErrHandler) ReportAll() {
 	if e.QueueSize() == 0 {
 		return
 	}
-	fmt.Printf("queue: %+v\n", e)
 	fileErrs := map[string][]Error{}
 
 	// classify errors by files

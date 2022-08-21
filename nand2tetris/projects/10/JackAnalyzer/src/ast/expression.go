@@ -20,7 +20,7 @@ type IdentifierExp struct {
 	Value string
 }
 
-func (i *IdentifierExp) expressionNode() {}
+func (_ *IdentifierExp) expressionNode() {}
 
 func (i *IdentifierExp) GetToken() token.Token { return i.Token }
 
@@ -37,7 +37,7 @@ type PrefixExp struct {
 	Right    Expression
 }
 
-func (p *PrefixExp) expressionNode() {}
+func (_ *PrefixExp) expressionNode() {}
 
 func (p *PrefixExp) GetToken() token.Token { return p.Token }
 
@@ -59,7 +59,7 @@ type InfixExp struct {
 	Right    Expression
 }
 
-func (i *InfixExp) expressionNode() {}
+func (_ *InfixExp) expressionNode() {}
 
 func (i *InfixExp) GetToken() token.Token { return i.Token }
 
@@ -96,7 +96,7 @@ type StrConstExp struct {
 	Value string
 }
 
-func (s *StrConstExp) expressionNode() {}
+func (_ *StrConstExp) expressionNode() {}
 
 func (s *StrConstExp) GetToken() token.Token { return s.Token }
 
@@ -112,7 +112,7 @@ type KeywordConstExp struct {
 	Value string
 }
 
-func (k *KeywordConstExp) expressionNode() {}
+func (_ *KeywordConstExp) expressionNode() {}
 
 func (k *KeywordConstExp) GetToken() token.Token { return k.Token }
 
@@ -128,7 +128,7 @@ type ExpressionListExp struct {
 	Expressions []Expression
 }
 
-func (el *ExpressionListExp) expressionNode() {}
+func (_ *ExpressionListExp) expressionNode() {}
 
 func (el *ExpressionListExp) GetToken() token.Token { return el.Token }
 
@@ -152,7 +152,7 @@ type IntConstExp struct {
 	Value int64
 }
 
-func (i *IntConstExp) expressionNode() {}
+func (_ *IntConstExp) expressionNode() {}
 
 func (i *IntConstExp) String() string {
 	if i == nil {

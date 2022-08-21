@@ -33,9 +33,7 @@ They are two ways to go about,
 
 ## Technologies
  * [The Nand to Tetris Software Suite](https://www.nand2tetris.org/software)
- * [visual studio code](https://code.visualstudio.com/)
  * [Go 1.18.2 or later](https://go.dev/)
- * [Git  2.32.0](https://git-scm.com/)
 
 ## Project structure
 Namespace Tree of the project at depth level 3.

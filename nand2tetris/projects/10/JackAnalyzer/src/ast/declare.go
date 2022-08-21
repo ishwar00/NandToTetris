@@ -31,7 +31,7 @@ type VarDec struct {
 	IdentifierExps []*IdentifierExp
 }
 
-func (vd *VarDec) declarationNode() {}
+func (_ *VarDec) declarationNode() {}
 
 func (vd *VarDec) GetToken() token.Token { return vd.Token }
 
@@ -65,7 +65,7 @@ type ClassDec struct {
 
 func (cd *ClassDec) GetToken() token.Token { return cd.Token }
 
-func (cd *ClassDec) declarationNode() {}
+func (_ *ClassDec) declarationNode() {}
 
 func (cs *ClassDec) String() string {
 	if cs == nil {
@@ -95,7 +95,7 @@ type ParameterDec struct {
 	Identifier *IdentifierExp
 }
 
-func (p *ParameterDec) declarationNode() {}
+func (_ *ParameterDec) declarationNode() {}
 
 func (p *ParameterDec) GetToken() token.Token { return p.Token }
 
@@ -119,7 +119,7 @@ type SubroutineDec struct {
 	Body       *SubroutineBodyDec
 }
 
-func (s *SubroutineDec) declarationNode() {}
+func (_ *SubroutineDec) declarationNode() {}
 
 func (s *SubroutineDec) GetToken() token.Token { return s.Token }
 
@@ -148,7 +148,7 @@ type SubroutineBodyDec struct {
 	Statements []Statement
 }
 
-func (s *SubroutineBodyDec) declarationNode() {}
+func (_ *SubroutineBodyDec) declarationNode() {}
 
 func (s *SubroutineBodyDec) GetToken() token.Token { return s.Token }
 

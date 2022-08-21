@@ -22,7 +22,7 @@ type LetSta struct {
 	Expression Expression
 }
 
-func (l *LetSta) statementNode() {}
+func (_ *LetSta) statementNode() {}
 
 func (l *LetSta) GetToken() token.Token { return l.Token }
 
@@ -44,7 +44,7 @@ type StatementBlockSta struct {
 	Statements []Statement
 }
 
-func (sb *StatementBlockSta) statementNode() {}
+func (_ *StatementBlockSta) statementNode() {}
 
 func (sb *StatementBlockSta) GetToken() token.Token { return sb.Token }
 
@@ -74,7 +74,7 @@ type IfElseSta struct {
 	Else      *StatementBlockSta
 }
 
-func (ie *IfElseSta) statementNode() {}
+func (_ *IfElseSta) statementNode() {}
 
 func (ie *IfElseSta) GetToken() token.Token { return ie.Token }
 
@@ -100,7 +100,7 @@ type WhileSta struct {
 	Statements *StatementBlockSta
 }
 
-func (ws *WhileSta) statementNode() {}
+func (_ *WhileSta) statementNode() {}
 
 func (ws *WhileSta) GetToken() token.Token { return ws.Token }
 
@@ -124,7 +124,7 @@ type DoSta struct {
 	SubCall Expression
 }
 
-func (d *DoSta) statementNode() {}
+func (_ *DoSta) statementNode() {}
 
 func (d *DoSta) GetToken() token.Token { return d.Token }
 
@@ -141,7 +141,7 @@ type ReturnSta struct {
 	Expression Expression
 }
 
-func (r *ReturnSta) statementNode() {}
+func (_ *ReturnSta) statementNode() {}
 
 func (r *ReturnSta) GetToken() token.Token { return r.Token }
 

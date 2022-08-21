@@ -19,37 +19,19 @@ var (
 	red    = color.RedString
 )
 
-var statementTokens = []token.TokenType{
+// error recovery tokens while parsing expression
+var expErrRecToks = []token.TokenType{
 	token.LET,
 	token.WHILE,
 	token.IF,
 	token.RETURN,
 	token.DO,
-}
-
-var subroutineTokens = []token.TokenType{
-	token.CONSTRUCTOR,
-	token.METHOD,
-	token.FUNCTION,
-}
-
-// subroutineBody level error recovery tokens
-var subErrTokens = []token.TokenType{
-	token.LET,
-	token.WHILE,
-	token.IF,
-	token.RETURN,
-	token.DO,
-	token.VAR,
-}
-
-// class level recovery tokens
-var classErrTokens = []token.TokenType{
-	token.CONSTRUCTOR,
-	token.METHOD,
-	token.FUNCTION,
-	token.STATIC,
-	token.FIELD,
+    token.STATIC,
+    token.FIELD,
+    token.VAR,
+    token.CONSTRUCTOR,
+    token.METHOD,
+    token.FUNCTION,
 }
 
 type (
@@ -188,9 +170,9 @@ func canBeType(tok token.Token) bool {
 }
 
 func (p *Parser) expectedTypeErr(tok token.Token) {
-	errMsg := "expected an identifier representing name of a " + yellow("DataType") + " here, like int, boolean etc"
+	errMsg := ">>> expected an identifier representing name of a " + yellow("DataType") + " here, like int, boolean etc"
 	if token.IsKeyword(tok.Literal) {
-		errMsg = fmt.Sprintf("cannot use reserved keyword '%s' as '%s' name",
+		errMsg = fmt.Sprintf(">>> cannot use reserved keyword '%s' as '%s' name",
 			yellow(tok.Literal), yellow("DataType"))
 	}
 	p.addError(errMsg, tok)
@@ -201,7 +183,7 @@ func (p *Parser) expectedTypeErr(tok token.Token) {
 // whole var declaration and calls itself again.
 func (p *Parser) peekClassVarDec(skipTo ...token.TokenType) bool {
 	if p.peekTokenIs(token.VAR) {
-		errMsg := fmt.Sprintf("cannot use %s (used for local variable declaration), expected %s or %s",
+		errMsg := fmt.Sprintf(">>> cannot use %s (used for local variable declaration), expected %s or %s",
 			red("var"), green("static"), green("field"))
 
 		p.addError(errMsg, p.peekToken)
@@ -219,22 +201,6 @@ func (p *Parser) peekStatement() bool {
 
 // skip to next toks, which ever comes first
 func (p *Parser) skipToNext(toks ...token.TokenType) {
-	match := func() bool {
-		for _, tok := range toks {
-			if p.peekTokenIs(tok) {
-				return true
-			}
-		}
-		return false
-	}
-
-	for !p.peekTokenIs(token.EOF) && !match() {
-		p.nextToken()
-	}
-}
-
-func (p *Parser) skipToNextSub(toks ...token.TokenType) {
-	toks = append(toks, subroutineTokens...)
 	match := func() bool {
 		for _, tok := range toks {
 			if p.peekTokenIs(tok) {
@@ -290,35 +256,34 @@ func (p *Parser) parseStatement(skipTo ...token.TokenType) ast.Statement {
 	case token.RETURN:
 		return p.parseReturnSta(skipTo...)
 	}
-	errMsg := "internal error: parser.parseStatement was called on " + red(p.curToken.Literal)
+	errMsg := ">>> internal error: parser.parseStatement was called on " + red(p.curToken.Literal)
 	p.addError(errMsg, p.curToken)
 	return nil
 }
 
 // helper to add error message
 func (p *Parser) expectedIdentifierErr(tok token.Token) {
-	errMsg := "expected an identifier name"
+	errMsg := ">>> expected an " + green("identifier") + " name"
 	if token.IsKeyword(tok.Literal) {
-		errMsg = fmt.Sprintf("cannot use reserved keyword '%s' as identifier",
+		errMsg = fmt.Sprintf(">>> cannot use reserved keyword '%s' as identifier",
 			yellow(tok.Literal))
 	}
 	p.addError(errMsg, tok)
 }
 
 func (p *Parser) expectedErr(expected string, got token.Token) {
-	errMsg := "expected " + green(expected) + " but got " + red(got.Literal)
+	errMsg := ">>> expected " + green(expected) + " but got " + red(got.Literal)
 	p.addError(errMsg, got)
 }
 
 // parses: static|field|var varName1, varName2, ... ;
-func (p *Parser) parseVarDec(skipTo ...token.TokenType) *ast.VarDec {
+func (p *Parser) parseVarDec() *ast.VarDec {
 	varDec := &ast.VarDec{
 		Token: p.curToken, // var, static, field
 	}
 	// expected name of a 'data type' next, eg: int, boolean, char, Ball ... etc
 	if !canBeType(p.peekToken) {
 		p.expectedTypeErr(p.peekToken)
-		p.skipToNext(skipTo...)
 		return nil
 	}
 
@@ -328,7 +293,6 @@ func (p *Parser) parseVarDec(skipTo ...token.TokenType) *ast.VarDec {
 	// expecting identifier
 	if !p.peekTokenIs(token.IDENT) {
 		p.expectedIdentifierErr(p.peekToken)
-		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -343,7 +307,6 @@ func (p *Parser) parseVarDec(skipTo ...token.TokenType) *ast.VarDec {
 		p.nextToken() // on ,(comma)
 		if !p.peekTokenIs(token.IDENT) {
 			p.expectedIdentifierErr(p.peekToken)
-			p.skipToNext(skipTo...)
 			return nil
 		}
 		p.nextToken()
@@ -356,7 +319,6 @@ func (p *Parser) parseVarDec(skipTo ...token.TokenType) *ast.VarDec {
 
 	if !p.peekTokenIs(token.SEMICO) {
 		p.expectedErr(";", p.peekToken)
-		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -395,24 +357,32 @@ func (p *Parser) ParseClassDec() *ast.ClassDec {
 	}
 	p.nextToken()
 
-	errRecToks := append(subroutineTokens, token.FIELD, token.STATIC)
+	errRecToks := []token.TokenType{ 
+        token.FIELD, 
+        token.STATIC, 
+        token.CONSTRUCTOR,
+        token.METHOD,
+        token.FUNCTION,
+    }
 
 	for !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
 		if p.peekClassVarDec(errRecToks...) {
 			p.nextToken()
-			if varDec := p.parseVarDec(errRecToks...); varDec != nil {
+			if varDec := p.parseVarDec(); varDec != nil {
 				classDec.ClassVarDecs = append(classDec.ClassVarDecs, varDec)
-			}
+			} else {
+                p.skipToNext(errRecToks...)
+            }
 		} else if p.peekSubroutine() {
 			p.nextToken()
-			subroutine := p.parseSubroutineDec(subErrTokens...)
+			subroutine := p.parseSubroutineDec(errRecToks...)
 			if subroutine != nil {
 				classDec.Subroutines = append(classDec.Subroutines, subroutine)
 			}
 		} else {
 			p.expectedErr("one of {method, function, constructor, static, field}",
 				p.peekToken)
-			p.skipToNext(classErrTokens...)
+			p.skipToNext(errRecToks...)
 		}
 	}
 
@@ -452,7 +422,7 @@ func (p *Parser) parseMethodCall(varName ast.Expression) ast.Expression {
 
 	if !p.peekTokenIs(token.IDENT) {
 		p.expectedErr("Identifier", p.peekToken)
-		p.skipToNext(statementTokens...)
+		p.skipToNext(expErrRecToks...)
 		return nil
 	}
 	precedence := precedences[p.curToken.Type]
@@ -485,7 +455,6 @@ func (p *Parser) parseLetStatement(skipTo ...token.TokenType) *ast.LetSta {
 	}
 
 	if !p.peekTokenIs(token.EQ) {
-		fmt.Printf("%+v\n", p.peekToken)
 		p.expectedErr("=", p.peekToken)
 		p.skipToNext(skipTo...)
 		return nil
@@ -598,9 +567,10 @@ func (p *Parser) parseStatementBlock(skipTo ...token.TokenType) *ast.StatementBl
 	for p.peekStatement() { // if, while, do and return
 		p.nextToken()
 		stmt := p.parseStatement(skipTo...)
-		if stmt != nil && !reflect.ValueOf(stmt).IsZero() {
-			stmtBlock.Statements = append(stmtBlock.Statements, stmt)
+		if stmt == nil || reflect.ValueOf(stmt).IsZero() {
+            continue
 		}
+        stmtBlock.Statements = append(stmtBlock.Statements, stmt)
 	}
 
 	if !p.peekTokenIs(token.RBRACE) {
@@ -839,7 +809,7 @@ func (p *Parser) parseParameterDec(skipTo ...token.TokenType) *ast.ParameterDec 
 
 	if !p.peekTokenIs(token.IDENT) {
 		p.expectedIdentifierErr(p.peekToken)
-		p.skipToNextSub(skipTo...)
+		p.skipToNext(skipTo...)
 		return nil
 	}
 	p.nextToken()
@@ -856,7 +826,7 @@ func (p *Parser) parseParameterListDec(skipTo ...token.TokenType) []*ast.Paramet
 	errRec = append(errRec, skipTo...)
 	err := false
 
-	parameter := p.parseParameterDec()
+	parameter := p.parseParameterDec(errRec...)
 	if parameter == nil {
 		err = true
 	}
@@ -929,7 +899,7 @@ func (p *Parser) parseSubroutineDec(skipTo ...token.TokenType) *ast.SubroutineDe
 		if !p.peekTokenIs(token.RPAREN) { // lets try to continue, finger crossed
 			return nil
 		}
-		subroutine.Parameters = params
+		subroutine.Parameters = params // can be nil
 	}
 
 	if !p.peekTokenIs(token.RPAREN) {
@@ -953,7 +923,7 @@ func (p *Parser) parseSubroutineDec(skipTo ...token.TokenType) *ast.SubroutineDe
 func (p *Parser) peekForVar() bool {
 	t := p.peekToken.Type
 	if t == token.STATIC || t == token.FIELD {
-		errMsg := "cannot declare " + red(p.peekToken.Literal) + " variables in subroutines"
+		errMsg := ">>> cannot declare " + red(p.peekToken.Literal) + " variables in subroutines"
 		p.addError(errMsg, p.peekToken)
 
 		return false
@@ -973,16 +943,16 @@ func (p *Parser) parseSubroutineBodyDec(skipTo ...token.TokenType) *ast.Subrouti
 		token.RETURN,
 		token.DO,
 		token.VAR,
-		token.RBRACE,
 	}
 	errRec = append(errRec, skipTo...)
 
-	for !p.peekTokenIs(token.RBRACE) && !p.peekSubroutine() && !p.peekTokenIs(token.EOF) {
+	for !p.peekTokenIs(token.RBRACE) {
 		switch {
 		case p.peekForVar():
 			p.nextToken()
-			varDec := p.parseVarDec(errRec...)
+			varDec := p.parseVarDec()
 			if varDec == nil {
+                p.skipToNext(errRec...)
 				continue
 			}
 			body.VarDecs = append(body.VarDecs, varDec)
@@ -993,15 +963,16 @@ func (p *Parser) parseSubroutineBodyDec(skipTo ...token.TokenType) *ast.Subrouti
 				continue
 			}
 			body.Statements = append(body.Statements, stmt)
+        case p.peekSubroutine() || p.peekTokenIs(token.EOF):
+            return nil
 		default:
 			p.expectedErr("one of {var, do , if, while, return}", p.peekToken)
-			p.skipToNext(classErrTokens...)
+			p.skipToNext(skipTo...)
 			return nil
 		}
 	}
 
 	if !p.peekTokenIs(token.RBRACE) {
-		fmt.Println("this one??")
 		p.expectedErr("}", p.peekToken)
 		p.skipToNext(skipTo...)
 		return nil
