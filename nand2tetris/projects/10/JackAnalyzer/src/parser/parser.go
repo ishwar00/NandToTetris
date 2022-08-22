@@ -48,6 +48,10 @@ type Parser struct {
 	errors    errhandler.ErrHandler
 }
 
+func (p *Parser) HasErrors() bool {
+	return p.errors.QueueSize() != 0
+}
+
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:         l,
@@ -97,7 +101,7 @@ const (
 	CALL_INDEX_PERIOD // myFunction(X), arr[4], foo.bar()
 )
 
-var precedences = map[token.TokenType]int{
+var Precedences = map[token.TokenType]int{
 	token.EQ:     EQUALS,
 	token.LT:     LESSGREATER,
 	token.GT:     LESSGREATER,
@@ -113,7 +117,7 @@ var precedences = map[token.TokenType]int{
 }
 
 func (p *Parser) peekPrecedence() int {
-	if p, ok := precedences[p.peekToken.Type]; ok {
+	if p, ok := Precedences[p.peekToken.Type]; ok {
 		return p
 	}
 	return LOWEST
@@ -425,7 +429,7 @@ func (p *Parser) parseMethodCall(varName ast.Expression) ast.Expression {
 		p.skipToNext(expErrRecToks...)
 		return nil
 	}
-	precedence := precedences[p.curToken.Type]
+	precedence := Precedences[p.curToken.Type]
 	p.nextToken()
 	infix.Right = p.parseExpression(precedence)
 	return infix
@@ -740,7 +744,7 @@ func (p *Parser) parseInfixExp(leftExp ast.Expression) ast.Expression {
 		Left:     leftExp,
 	}
 
-	precedence := precedences[p.curToken.Type]
+	precedence := Precedences[p.curToken.Type]
 	p.nextToken()
 	exp.Right = p.parseExpression(precedence)
 	return exp

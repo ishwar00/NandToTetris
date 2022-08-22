@@ -15,7 +15,7 @@ func Run(file string) error {
 		return err
 	}
 
-	ident := "\t"
+	indent := "\t"
 
 	outputFile, closer, err := createOutputFile(file)
 	if err != nil {
@@ -25,34 +25,36 @@ func Run(file string) error {
 
 	outputFile.WriteString("<tokens>\n")
 	for tok, buf := l.NextToken(), ""; tok.Type != token.EOF; tok = l.NextToken() {
-		switch tok.Type {
-		case token.CLASS, token.FUNCTION, token.METHOD, token.CONSTRUCTOR, token.FIELD,
-			token.STATIC, token.VAR, token.CHAR, token.BOOLEAN, token.INT,
-			token.TRUE, token.FALSE, token.NULL, token.THIS, token.LET,
-			token.IF, token.ELSE, token.RETURN, token.DO, token.VOID,
-			token.WHILE:
+		value := int(tok.Type)
+		// keyword range
+		if 0 <= value && value <= 20 {
+			value = 100
+		}
 
-			buf = fmt.Sprintf("%s<keyword>%v</keyword>\n", ident, tok.Literal)
-		case token.LBRACE, token.RBRACE, token.LBRACK, token.RBRACK, token.RPAREN,
-			token.LPAREN, token.PERIOD, token.COMMA, token.SEMICO, token.PLUS,
-			token.MINUS, token.ASTERI, token.SLASH, token.EQ, token.TILDE,
-			token.PIPE:
+		// symbol range
+		if 21 <= value && value <= 36 {
+			value = 200
+		}
 
-			buf = fmt.Sprintf("%s<symbol>%v</symbol>\n", ident, tok.Literal)
+		switch value {
+		case 100:
+			buf = fmt.Sprintf("%s<keyword>%v</keyword>\n", indent, tok.Literal)
+		case 200:
+			buf = fmt.Sprintf("%s<symbol>%v</symbol>\n", indent, tok.Literal)
 		case token.LT:
-			buf = fmt.Sprintf("%s<symbol>&lt;</symbol>\n", ident)
+			buf = fmt.Sprintf("%s<symbol>&lt;</symbol>\n", indent)
 		case token.GT:
-			buf = fmt.Sprintf("%s<symbol>&gt;</symbol>\n", ident)
+			buf = fmt.Sprintf("%s<symbol>&gt;</symbol>\n", indent)
 		case token.AMPERS:
-			buf = fmt.Sprintf("%s<symbol>&amp;</symbol>\n", ident)
+			buf = fmt.Sprintf("%s<symbol>&amp;</symbol>\n", indent)
 		case token.IDENT:
-			buf = fmt.Sprintf("%s<identifier>%v</identifier>\n", ident, tok.Literal)
+			buf = fmt.Sprintf("%s<identifier>%v</identifier>\n", indent, tok.Literal)
 		case token.INT_CONST:
-			buf = fmt.Sprintf("%s<integerConstant>%v</integerConstant>\n", ident, tok.Literal)
+			buf = fmt.Sprintf("%s<integerConstant>%v</integerConstant>\n", indent, tok.Literal)
 		case token.STR_CONST:
-			buf = fmt.Sprintf("%s<stringConstant>%v</stringConstant>\n", ident, tok.Literal)
+			buf = fmt.Sprintf("%s<stringConstant>%v</stringConstant>\n", indent, tok.Literal)
 		default:
-			buf = fmt.Sprintf("%s<illegal>%v</illegal>\n", ident, tok.Literal)
+			buf = fmt.Sprintf("%s<illegal>%v</illegal>\n", indent, tok.Literal)
 		}
 		outputFile.WriteString(buf)
 	}

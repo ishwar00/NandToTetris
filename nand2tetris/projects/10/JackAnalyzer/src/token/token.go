@@ -11,57 +11,60 @@ type Token struct {
 }
 
 const (
-	// symbols ( } ; = ...
-	LBRACE = iota
-	RBRACE
-	RPAREN
-	LPAREN
-	RBRACK
-	LBRACK
-	PERIOD
-	COMMA
-	SEMICO
-
-	// operators, +, -, *, /, & ...
-	PLUS
-	MINUS
-	ASTERI
-	SLASH
-	AMPERS
-	PIPE
-	GT
-	LT
-	EQ
-	TILDE
-
-	// constants "abc", "hey", 45, 5 ...
-	STR_CONST
-	INT_CONST
-
-	// indentifiers and keywords, abc_d, if, class ...
-	IDENT
-	CLASS
-	CONSTRUCTOR
+	// keywords tokens, their value lies between [0, 20]
+	CLASS = iota // first token value 0
 	FUNCTION
 	METHOD
+	CONSTRUCTOR
 	FIELD
 	STATIC
 	VAR
-	INT
 	CHAR
 	BOOLEAN
-	VOID
+	INT
 	TRUE
 	FALSE
 	NULL
 	THIS
 	LET
-	DO
 	IF
 	ELSE
-	WHILE
 	RETURN
+	DO
+	VOID
+	WHILE // last keyword token value 20
 
+	// symbol tokens, range between [21, 39]
+	LBRACE // starts with 21
+	RBRACE
+	LBRACK
+	RBRACK
+	RPAREN
+	LPAREN
+	PERIOD
+	COMMA
+	SEMICO
+	PLUS
+	MINUS
+	ASTERI
+	SLASH
+	EQ
+	TILDE
+	PIPE // 36
+	LT
+	GT
+	AMPERS // ends with 39
+
+	// identifier token value is 40
+	IDENT
+
+	// constants value range between [41, 42]
+	STR_CONST // 41
+	INT_CONST // 42
+
+	// helper tokens
+	SYMBOLS
+	KEYWORDS
 	EOF
 	ILLEGAL
 )

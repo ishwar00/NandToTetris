@@ -99,7 +99,6 @@ func report(line string, errs []Error) {
 	errLine += line[last:]
 
 	lineNumber := fmt.Sprintf(" %d| ", errs[0].OnLine+1)
-	fmt.Printf("lineNumber: %d\n", errs[0].OnLine)
 	padding := createString(len(lineNumber)-2, ' ') + "| " // ----|
 	errMsg := padding + "\n"
 	errMsg += lineNumber + errLine + "\n"
