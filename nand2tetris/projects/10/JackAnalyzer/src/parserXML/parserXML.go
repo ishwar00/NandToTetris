@@ -205,7 +205,6 @@ func walkDoSubroutine(exp ast.Expression, out io.Writer) {
 	default:
 		panic("walkDoSubrutine got something unexpected")
 	}
-
 }
 
 func walkWhileSta(whileSta *ast.WhileSta, out io.Writer) {
@@ -390,7 +389,7 @@ func walkPrefixExp(exp *ast.PrefixExp, out io.Writer) {
 	sur := false
 	//         root
 	//        /    \
-	//operator      expression(is infix expression)
+	// operator      expression(is infix expression)
 	// wrap expression(infix) with parentheses if root's precedence
 	// is greater tha expression
 	if infix, ok := exp.Right.(*ast.InfixExp); ok {
