@@ -25,7 +25,7 @@ func main() {
 			ext := filepath.Ext(file.Name())
 			if !file.IsDir() && ext == ".jack" {
 				filePath := filepath.Join(path, file.Name())
-                parserxml.ParseIntoXML(filePath)
+				parserxml.ParseIntoXML(filePath)
 			}
 		}
 	} else if ext == ".jack" {

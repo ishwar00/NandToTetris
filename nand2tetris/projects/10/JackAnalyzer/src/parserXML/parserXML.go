@@ -18,9 +18,9 @@ func ParseIntoXML(jackFilePath string) {
 	if err != nil {
 		panic(err)
 	}
-    if l.FoundErrors() {
-        l.ReportErrors()
-    }
+	if l.FoundErrors() {
+		l.ReportErrors()
+	}
 	p := parser.New(l)
 	AST := p.ParseClassDec()
 	if p.HasErrors() {
@@ -35,21 +35,21 @@ func ParseIntoXML(jackFilePath string) {
 	if err != nil {
 		panic(err)
 	}
-    defer closer()
+	defer closer()
 	// walkClass(AST, os.Stdout)
 	walkClass(AST, file)
 }
 
 func writeTok(tok token.Token, out io.Writer) {
 	tag := tagOf(tok.Type)
-    switch tok.Type {
-    case token.LT:
-        tok.Literal = fmt.Sprintf("&lt;")
-    case token.GT:
-        tok.Literal = fmt.Sprintf("&gt;")
-    case token.AMPERS:
-        tok.Literal = fmt.Sprintf("&amp;")
-    }
+	switch tok.Type {
+	case token.LT:
+		tok.Literal = fmt.Sprintf("&lt;")
+	case token.GT:
+		tok.Literal = fmt.Sprintf("&gt;")
+	case token.AMPERS:
+		tok.Literal = fmt.Sprintf("&amp;")
+	}
 	buf := fmt.Sprintf("<%s>%s</%s>\n", tag, tok.Literal, tag)
 	out.Write([]byte(buf))
 }
@@ -197,7 +197,7 @@ func walkDoSta(do *ast.DoSta, out io.Writer) {
 	out.Write([]byte("<doStatement>\n"))
 	writeTok(do.Token, out)
 	walkDoSubroutine(do.SubCall, out)
-    writeTok(token.Token{Literal: ";", Type: token.SEMICO}, out)
+	writeTok(token.Token{Literal: ";", Type: token.SEMICO}, out)
 	out.Write([]byte("</doStatement>\n"))
 }
 
@@ -207,12 +207,12 @@ func walkDoSubroutine(exp ast.Expression, out io.Writer) {
 		if v.Token.Literal == "(" {
 			walkDoSubroutine(v.Left, out)
 			writeTok(token.Token{Literal: "(", Type: token.LPAREN}, out)
-            if v.Right != nil {
-                walkExpressionList(v.Right.(*ast.ExpressionListExp), out)
-            } else {
-                out.Write([]byte("<expressionList>\n"))
-                out.Write([]byte("</expressionList>\n"))
-            }
+			if v.Right != nil {
+				walkExpressionList(v.Right.(*ast.ExpressionListExp), out)
+			} else {
+				out.Write([]byte("<expressionList>\n"))
+				out.Write([]byte("</expressionList>\n"))
+			}
 			writeTok(token.Token{Literal: ")", Type: token.RPAREN}, out)
 		} else {
 			walkDoSubroutine(v.Left, out)
@@ -247,11 +247,11 @@ func walkWhileSta(whileSta *ast.WhileSta, out io.Writer) {
 func walkReturnSta(returnSta *ast.ReturnSta, out io.Writer) {
 	out.Write([]byte("<returnStatement>\n"))
 	writeTok(returnSta.Token, out)
-    if returnSta.Expression != nil {
-        out.Write([]byte("<expression>\n"))
-        walkExpression(returnSta.Expression, out)
-        out.Write([]byte("</expression>\n"))
-    }
+	if returnSta.Expression != nil {
+		out.Write([]byte("<expression>\n"))
+		walkExpression(returnSta.Expression, out)
+		out.Write([]byte("</expression>\n"))
+	}
 	writeTok(token.Token{Literal: ";", Type: token.SEMICO}, out)
 	out.Write([]byte("</returnStatement>\n"))
 }
@@ -284,7 +284,7 @@ func walkLetSta(stmt *ast.LetSta, out io.Writer) {
 
 	writeTok(stmt.Token, out) // let
 	// walkExpression(stmt.Name, out)
-    walkName(stmt.Name, out)
+	walkName(stmt.Name, out)
 	writeTok(token.Token{Literal: "=", Type: token.EQ}, out)
 	out.Write([]byte("<expression>\n"))
 	walkExpression(stmt.Expression, out)
@@ -295,19 +295,18 @@ func walkLetSta(stmt *ast.LetSta, out io.Writer) {
 }
 
 func walkName(name ast.Expression, out io.Writer) {
-    if name.GetToken().Literal == "[" {
-        infix := name.(*ast.InfixExp)
-        writeTok(infix.Left.GetToken(), out) // name
-        writeTok(name.GetToken(), out) // [
-        out.Write([]byte("<expression>\n"))
-        walkExpression(infix.Right, out)
-        out.Write([]byte("</expression>\n"))
-        writeTok(token.Token{Literal: "]", Type: token.RBRACK}, out)
-    } else {
-        writeTok(name.GetToken(), out) // this has to be name
-    }
+	if name.GetToken().Literal == "[" {
+		infix := name.(*ast.InfixExp)
+		writeTok(infix.Left.GetToken(), out) // name
+		writeTok(name.GetToken(), out)       // [
+		out.Write([]byte("<expression>\n"))
+		walkExpression(infix.Right, out)
+		out.Write([]byte("</expression>\n"))
+		writeTok(token.Token{Literal: "]", Type: token.RBRACK}, out)
+	} else {
+		writeTok(name.GetToken(), out) // this has to be name
+	}
 }
-
 
 func walkExpression(exp ast.Expression, out io.Writer) {
 	writeTerm := func(tok token.Token) {
@@ -332,7 +331,7 @@ func walkExpression(exp ast.Expression, out io.Writer) {
 	case *ast.ExpressionListExp:
 		walkExpressionList(v, out)
 	default:
-        errMsg := fmt.Sprintf(">>>> missing implementation for %T", exp)
+		errMsg := fmt.Sprintf(">>>> missing implementation for %T", exp)
 		panic(errMsg)
 	}
 }
@@ -389,8 +388,8 @@ func walkInfixExp(exp *ast.InfixExp, out io.Writer) {
 	if methodCall && exp.Left.GetToken().Literal != "." {
 		writeTok(exp.Left.GetToken(), out)
 	} else if exp.Operator == "[" {
-        writeTok(exp.Left.GetToken(), out)
-    } else {
+		writeTok(exp.Left.GetToken(), out)
+	} else {
 		writeExpression(exp.Left, leftClose, out)
 	}
 
