@@ -6,9 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ishwar00/JackAnalyzer/lexer"
-	// lexerxml "github.com/ishwar00/JackAnalyzer/lexerXML"
-	"github.com/ishwar00/JackAnalyzer/parser"
 	"github.com/ishwar00/JackAnalyzer/parserXML"
 )
 
@@ -28,27 +25,10 @@ func main() {
 			ext := filepath.Ext(file.Name())
 			if !file.IsDir() && ext == ".jack" {
 				filePath := filepath.Join(path, file.Name())
-				l, err := lexer.LexFile(filePath)
-				if err != nil {
-					panic(err)
-				}
-				p := parser.New(l)
-				p.ParseProgram()
-				// fmt.Println(program.String())
+                parserxml.ParseIntoXML(filePath)
 			}
 		}
-
 	} else if ext == ".jack" {
-		// lexerxml.Run(os.Args[1])
-		// l, err := lexer.LexFile(os.Args[1])
-		// if err != nil {
-		// 	panic(err)
-		// }
-		// p := parser.New(l)
-		// class := p.ParseClassDec()
-		// l.ReportErrors()
-		// p.ReportErrors()
-		// fmt.Println(class.String())
 		parserxml.ParseIntoXML(os.Args[1])
 	} else {
 		errMsg := fmt.Errorf("invalid argument %s", path)

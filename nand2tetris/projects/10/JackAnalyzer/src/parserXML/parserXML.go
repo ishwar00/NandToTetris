@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/ishwar00/JackAnalyzer/ast"
 	"github.com/ishwar00/JackAnalyzer/lexer"
@@ -11,14 +12,17 @@ import (
 	"github.com/ishwar00/JackAnalyzer/token"
 )
 
+// implementation is not pretty and neat.
 func ParseIntoXML(jackFilePath string) {
 	l, err := lexer.LexFile(jackFilePath)
 	if err != nil {
 		panic(err)
 	}
+    if l.FoundErrors() {
+        l.ReportErrors()
+    }
 	p := parser.New(l)
 	AST := p.ParseClassDec()
-	fmt.Println(AST)
 	if p.HasErrors() {
 		p.ReportErrors()
 		return
@@ -27,16 +31,25 @@ func ParseIntoXML(jackFilePath string) {
 	if AST == nil {
 		panic("ParseIntoXML: AST is nil")
 	}
-	file, err := os.Create("out.xml")
+	file, closer, err := createOutputFile(jackFilePath)
 	if err != nil {
 		panic(err)
 	}
+    defer closer()
 	// walkClass(AST, os.Stdout)
 	walkClass(AST, file)
 }
 
 func writeTok(tok token.Token, out io.Writer) {
 	tag := tagOf(tok.Type)
+    switch tok.Type {
+    case token.LT:
+        tok.Literal = fmt.Sprintf("&lt;")
+    case token.GT:
+        tok.Literal = fmt.Sprintf("&gt;")
+    case token.AMPERS:
+        tok.Literal = fmt.Sprintf("&amp;")
+    }
 	buf := fmt.Sprintf("<%s>%s</%s>\n", tag, tok.Literal, tag)
 	out.Write([]byte(buf))
 }
@@ -184,6 +197,7 @@ func walkDoSta(do *ast.DoSta, out io.Writer) {
 	out.Write([]byte("<doStatement>\n"))
 	writeTok(do.Token, out)
 	walkDoSubroutine(do.SubCall, out)
+    writeTok(token.Token{Literal: ";", Type: token.SEMICO}, out)
 	out.Write([]byte("</doStatement>\n"))
 }
 
@@ -193,7 +207,12 @@ func walkDoSubroutine(exp ast.Expression, out io.Writer) {
 		if v.Token.Literal == "(" {
 			walkDoSubroutine(v.Left, out)
 			writeTok(token.Token{Literal: "(", Type: token.LPAREN}, out)
-			walkExpressionList(v.Right.(*ast.ExpressionListExp), out)
+            if v.Right != nil {
+                walkExpressionList(v.Right.(*ast.ExpressionListExp), out)
+            } else {
+                out.Write([]byte("<expressionList>\n"))
+                out.Write([]byte("</expressionList>\n"))
+            }
 			writeTok(token.Token{Literal: ")", Type: token.RPAREN}, out)
 		} else {
 			walkDoSubroutine(v.Left, out)
@@ -212,9 +231,10 @@ func walkWhileSta(whileSta *ast.WhileSta, out io.Writer) {
 
 	writeTok(whileSta.Token, out)
 	writeTok(token.Token{Literal: "(", Type: token.LPAREN}, out)
-	out.Write([]byte("<expression>"))
+	out.Write([]byte("<expression>\n"))
 	walkExpression(whileSta.Condition, out)
-	out.Write([]byte("</expression>"))
+	out.Write([]byte("</expression>\n"))
+	writeTok(token.Token{Literal: ")", Type: token.RPAREN}, out)
 	writeTok(token.Token{Literal: "{", Type: token.LBRACE}, out)
 	if whileSta.Statements != nil {
 		walkStatements(whileSta.Statements.Statements, out)
@@ -225,13 +245,15 @@ func walkWhileSta(whileSta *ast.WhileSta, out io.Writer) {
 }
 
 func walkReturnSta(returnSta *ast.ReturnSta, out io.Writer) {
-	out.Write([]byte("<whileStatement>\n"))
+	out.Write([]byte("<returnStatement>\n"))
 	writeTok(returnSta.Token, out)
-	out.Write([]byte("<expression>"))
-	walkExpression(returnSta.Expression, out)
-	out.Write([]byte("</expression>"))
+    if returnSta.Expression != nil {
+        out.Write([]byte("<expression>\n"))
+        walkExpression(returnSta.Expression, out)
+        out.Write([]byte("</expression>\n"))
+    }
 	writeTok(token.Token{Literal: ";", Type: token.SEMICO}, out)
-	out.Write([]byte("</whileStatement>\n"))
+	out.Write([]byte("</returnStatement>\n"))
 }
 
 func walkIfElseSta(ifElse *ast.IfElseSta, out io.Writer) {
@@ -239,9 +261,9 @@ func walkIfElseSta(ifElse *ast.IfElseSta, out io.Writer) {
 
 	writeTok(ifElse.Token, out) // if
 	writeTok(token.Token{Literal: "(", Type: token.LPAREN}, out)
-	out.Write([]byte("<expression>"))
+	out.Write([]byte("<expression>\n"))
 	walkExpression(ifElse.Condition, out) // condition
-	out.Write([]byte("</expression>"))
+	out.Write([]byte("</expression>\n"))
 	writeTok(token.Token{Literal: ")", Type: token.RPAREN}, out)
 	writeTok(token.Token{Literal: "{", Type: token.LBRACE}, out)
 	walkStatements(ifElse.Then.Statements, out)
@@ -261,7 +283,8 @@ func walkLetSta(stmt *ast.LetSta, out io.Writer) {
 	out.Write([]byte("<letStatement>\n"))
 
 	writeTok(stmt.Token, out) // let
-	walkExpression(stmt.Name, out)
+	// walkExpression(stmt.Name, out)
+    walkName(stmt.Name, out)
 	writeTok(token.Token{Literal: "=", Type: token.EQ}, out)
 	out.Write([]byte("<expression>\n"))
 	walkExpression(stmt.Expression, out)
@@ -270,6 +293,21 @@ func walkLetSta(stmt *ast.LetSta, out io.Writer) {
 
 	out.Write([]byte("</letStatement>\n"))
 }
+
+func walkName(name ast.Expression, out io.Writer) {
+    if name.GetToken().Literal == "[" {
+        infix := name.(*ast.InfixExp)
+        writeTok(infix.Left.GetToken(), out) // name
+        writeTok(name.GetToken(), out) // [
+        out.Write([]byte("<expression>\n"))
+        walkExpression(infix.Right, out)
+        out.Write([]byte("</expression>\n"))
+        writeTok(token.Token{Literal: "]", Type: token.RBRACK}, out)
+    } else {
+        writeTok(name.GetToken(), out) // this has to be name
+    }
+}
+
 
 func walkExpression(exp ast.Expression, out io.Writer) {
 	writeTerm := func(tok token.Token) {
@@ -294,7 +332,8 @@ func walkExpression(exp ast.Expression, out io.Writer) {
 	case *ast.ExpressionListExp:
 		walkExpressionList(v, out)
 	default:
-		fmt.Printf("missed %T", exp)
+        errMsg := fmt.Sprintf(">>>> missing implementation for %T", exp)
+		panic(errMsg)
 	}
 }
 
@@ -349,7 +388,9 @@ func walkInfixExp(exp *ast.InfixExp, out io.Writer) {
 	methodCall := exp.Operator == "."
 	if methodCall && exp.Left.GetToken().Literal != "." {
 		writeTok(exp.Left.GetToken(), out)
-	} else {
+	} else if exp.Operator == "[" {
+        writeTok(exp.Left.GetToken(), out)
+    } else {
 		writeExpression(exp.Left, leftClose, out)
 	}
 
@@ -359,11 +400,11 @@ func walkInfixExp(exp *ast.InfixExp, out io.Writer) {
 		writeTok(exp.Right.GetToken(), out)
 	} else {
 		if exp.Operator == "[" {
-			out.Write([]byte("<expression>"))
+			out.Write([]byte("<expression>\n"))
 		}
 		writeExpression(exp.Right, rightClose, out)
 		if exp.Operator == "[" {
-			out.Write([]byte("</expression>"))
+			out.Write([]byte("</expression>\n"))
 		}
 	}
 
@@ -429,4 +470,20 @@ func walkExpressionList(expList *ast.ExpressionListExp, out io.Writer) {
 	}
 
 	out.Write([]byte("</expressionList>\n"))
+}
+
+func createOutputFile(path string) (*os.File, func(), error) {
+	ext := filepath.Ext(path)
+	if ext == "" {
+		return nil, func() {}, fmt.Errorf("%s, is not a file or it does not end with file extension .jack", path)
+	}
+
+	if ext != ".jack" {
+		return nil, func() {}, fmt.Errorf("%s, file extension must end with .jack", path)
+	}
+	// TTT just to avoid name collison with with testing files ending with T.xml and TT.xml
+	// this lexer supposed to produce similar output to file ending with .xml file
+	outputPath := path[0:len(path)-len(ext)] + "TTT.xml"
+	file, err := os.Create(outputPath)
+	return file, func() { file.Close() }, err
 }

@@ -219,34 +219,6 @@ func (p *Parser) skipToNext(toks ...token.TokenType) {
 	}
 }
 
-func (p *Parser) ParseProgram() {
-	// buf := p.parseIfElseSta()
-	// if buf != nil && !reflect.ValueOf(buf).IsZero() {
-	//     fmt.Println(buf.String())
-	// }
-	var buf interface {
-		String() string
-	}
-	for !p.curTokenIs(token.EOF) {
-		switch p.curToken.Type {
-		case token.CLASS:
-			// buf = p.parseClassDec()
-		case token.IF:
-			buf = p.parseIfElseSta()
-		case token.WHILE:
-			buf = p.parseWhileSta()
-		case token.RETURN:
-			buf = p.parseReturnSta()
-		case token.LET:
-			buf = p.parseLetStatement()
-		}
-		if buf != nil && !reflect.ValueOf(buf).IsZero() {
-			fmt.Println(buf.String())
-		}
-		p.nextToken()
-	}
-}
-
 func (p *Parser) parseStatement(skipTo ...token.TokenType) ast.Statement {
 	switch p.curToken.Type {
 	case token.IF:

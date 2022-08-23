@@ -1,12 +1,10 @@
 class Testing {
-    constructor Testing New(int a, int b) {
-        do a.b.c(4);
+    static int ball;
+    field boolean done;
+
+    constructor Testing New(int a) {
+        let ball = a;
+        let done = false;
+        return this;
     }
 }
-
-
-
-
-
-
-
