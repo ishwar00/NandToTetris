@@ -222,7 +222,8 @@ func walkDoSubroutine(exp ast.Expression, out io.Writer) {
 	case *ast.IdentifierExp:
 		writeTok(v.Token, out)
 	default:
-		panic("walkDoSubrutine got something unexpected")
+        errMsg := fmt.Sprintf("walkDoSubrutine got something unexpected exp %+v", exp)
+     	panic(errMsg)
 	}
 }
 
@@ -418,7 +419,9 @@ func writeExpression(exp ast.Expression, c bool, out io.Writer) {
 		out.Write([]byte("<term>\n"))
 		writeTok(token.Token{Literal: "(", Type: token.LPAREN}, out)
 	}
-	walkExpression(exp, out)
+    if exp != nil {
+        walkExpression(exp, out)
+    }
 	if c {
 		writeTok(token.Token{Literal: ")", Type: token.RPAREN}, out)
 		out.Write([]byte("</term>\n"))

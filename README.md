@@ -49,7 +49,7 @@ Namespace Tree of the project at depth level 3.
     |   |   +---07 Virtual Machine 1 (processing)
     |   |   +---08 Virtual Machine 2 (control)
     |   |   +---09 High-Level Language
-    |   |   +---10
+    |   |   +---10 Compiler I: Syntax Analysis
     |   |   +---11
     |   |   +---12
     |   |   +---13
