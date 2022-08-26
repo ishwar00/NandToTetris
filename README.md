@@ -84,7 +84,7 @@ machine language
 ✔️  Virtual Machine I: Processing\
 ✔️  Virtual Machine II: Control\
 ✔️  High-Level Language\
-✔️  Compiler I: Syntax Analysis([did not clear all tests](nand2tetris/projects/10/JackAnalyzer/src/parserXML/readme.md))\
+✔️  Compiler I: Syntax Analysis([did not clear all tests ](https://github.com/ishwar00/NandToTetris/blob/main/nand2tetris/projects/10%20Compiler%20I:%20%20Syntax%20Analysis/JackAnalyzer/src/parserXML/readme.md))\
 ❌ Compiler II: Code generation\
 ❌ Operating System\
 ❌ More Fun to Go
