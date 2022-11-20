@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 
@@ -49,7 +48,7 @@ type Parser struct {
 }
 
 func (p *Parser) HasErrors() bool {
-	return p.errors.QueueSize() != 0
+	return p.errors.Error_count() > 0
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -160,8 +159,7 @@ func (p *Parser) addError(errMsg string, token token.Token) {
 }
 
 func (p *Parser) ReportErrors() {
-	if p.errors.QueueSize() > 0 {
-		os.Stdout.WriteString(red("syntax error(s)\n"))
+	if p.errors.Error_count() > 0 {
 		p.errors.ReportAll()
 	}
 }
@@ -174,11 +172,7 @@ func canBeType(tok token.Token) bool {
 }
 
 func (p *Parser) expectedTypeErr(tok token.Token) {
-	errMsg := ">>> expected an identifier representing name of a " + yellow("DataType") + " here, like int, boolean etc"
-	if token.IsKeyword(tok.Literal) {
-		errMsg = fmt.Sprintf(">>> cannot use reserved keyword '%s' as '%s' name",
-			yellow(tok.Literal), yellow("DataType"))
-	}
+    errMsg := fmt.Sprintf("%s is not a Type", color.RedString(tok.Literal))
 	p.addError(errMsg, tok)
 }
 
@@ -187,11 +181,11 @@ func (p *Parser) expectedTypeErr(tok token.Token) {
 // whole var declaration and calls itself again.
 func (p *Parser) peekClassVarDec(skipTo ...token.TokenType) bool {
 	if p.peekTokenIs(token.VAR) {
-		errMsg := fmt.Sprintf(">>> cannot use %s (used for local variable declaration), expected %s or %s",
+		errMsg := fmt.Sprintf("cannot use %s (used for local variable declaration), expected %s or %s",
 			red("var"), green("static"), green("field"))
 
 		p.addError(errMsg, p.peekToken)
-		p.nextToken()           // consume semicolon ;
+		p.nextToken()
 		p.skipToNext(skipTo...) // skipping to next semicolon
 		return p.peekClassVarDec(skipTo...)
 	}
@@ -232,23 +226,19 @@ func (p *Parser) parseStatement(skipTo ...token.TokenType) ast.Statement {
 	case token.RETURN:
 		return p.parseReturnSta(skipTo...)
 	}
-	errMsg := ">>> internal error: parser.parseStatement was called on " + red(p.curToken.Literal)
+    errMsg := red("compiler bug") + ": parser.parseStatement was called on " + red(p.curToken.Literal)
 	p.addError(errMsg, p.curToken)
 	return nil
 }
 
 // helper to add error message
 func (p *Parser) expectedIdentifierErr(tok token.Token) {
-	errMsg := ">>> expected an " + green("identifier") + " name"
-	if token.IsKeyword(tok.Literal) {
-		errMsg = fmt.Sprintf(">>> cannot use reserved keyword '%s' as identifier",
-			yellow(tok.Literal))
-	}
+	errMsg := "expected an " + green("identifier")
 	p.addError(errMsg, tok)
 }
 
 func (p *Parser) expectedErr(expected string, got token.Token) {
-	errMsg := ">>> expected " + green(expected) + " but got " + red(got.Literal)
+	errMsg := "expected " + green(expected) + " but got " + red(got.Literal)
 	p.addError(errMsg, got)
 }
 
@@ -356,7 +346,7 @@ func (p *Parser) ParseClassDec() *ast.ClassDec {
 				classDec.Subroutines = append(classDec.Subroutines, subroutine)
 			}
 		} else {
-			p.expectedErr("one of {method, function, constructor, static, field}",
+			p.expectedErr("'method' | 'function' | 'constructor' | 'static' | 'field'",
 				p.peekToken)
 			p.skipToNext(errRecToks...)
 		}
@@ -899,7 +889,7 @@ func (p *Parser) parseSubroutineDec(skipTo ...token.TokenType) *ast.SubroutineDe
 func (p *Parser) peekForVar() bool {
 	t := p.peekToken.Type
 	if t == token.STATIC || t == token.FIELD {
-		errMsg := ">>> cannot declare " + red(p.peekToken.Literal) + " variables in subroutines"
+		errMsg := "cannot declare " + red(p.peekToken.Literal) + " variables in subroutines"
 		p.addError(errMsg, p.peekToken)
 
 		return false
@@ -942,7 +932,7 @@ func (p *Parser) parseSubroutineBodyDec(skipTo ...token.TokenType) *ast.Subrouti
 		case p.peekSubroutine() || p.peekTokenIs(token.EOF):
 			return nil
 		default:
-			p.expectedErr("one of {var, do , if, while, return}", p.peekToken)
+			p.expectedErr("'var' | 'do' | 'if' | 'while' | 'return'", p.peekToken)
 			p.skipToNext(skipTo...)
 			return nil
 		}

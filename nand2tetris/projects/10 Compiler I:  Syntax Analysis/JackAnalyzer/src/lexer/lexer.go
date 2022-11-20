@@ -32,6 +32,7 @@ func LexFile(fileName string) (*Lexer, error) {
 	if err != nil {
 		return &Lexer{}, err
 	}
+    input = append(input, []byte("\n    ")...)
 
 	l := &Lexer{
 		input:    string(input),
@@ -140,7 +141,7 @@ func (l *Lexer) ReportErrors() {
 }
 
 func (l *Lexer) FoundErrors() bool {
-	return l.errors.QueueSize() != 0
+	return l.errors.Error_count() > 0
 }
 
 func (l *Lexer) readString() string {

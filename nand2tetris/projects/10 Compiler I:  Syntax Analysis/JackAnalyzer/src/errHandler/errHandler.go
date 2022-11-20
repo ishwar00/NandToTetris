@@ -3,136 +3,119 @@ package errhandler
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/fatih/color"
+)
+
+// implementation is inspired from vlang
+// https://github.com/vlang/v/blob/6b0743bb07f8d003ff703dc48ae2120cd8bc152a/vlib/v/util/errors.v#L20
+
+// error_context_before - how many lines of source context to print before the pointer line
+// error_context_after - ^^^ same, but after
+const (
+    error_context_before = 2
+	error_context_after  = 2
 )
 
 type Error struct {
 	ErrMsg   string
 	OnLine   int
 	OnColumn int
-	// this is the length of highlighted text, indicating error
+
+    // Length: length of text, pointed by pointer line
 	// starting from onColumn to onColumn + length
 	Length int
-	File   string // file path, must be absolute
+	File   string
+}
+
+// filepath:line:col: error_message
+func (e *Error) format() string {
+    return fmt.Sprintf("%s:%d:%d: %s: %s",
+    e.File, e.OnLine + 1, e.OnColumn + 1, color.RedString("error"), e.ErrMsg)
 }
 
 type ErrHandler struct {
-	queue []Error
+    error_count int
+    fileErrs    map[string][]Error // key: fileName, value: slice of Error in file fileName
 }
 
-func (e *ErrHandler) Add(errMsg Error) error {
-	absPath, err := filepath.Abs(errMsg.File)
-	if err != nil {
-		return err
-	}
-	errMsg.File = absPath
-	e.queue = append(e.queue, errMsg)
-	return nil
+// TODO: Add does not need to return error 
+func (eh *ErrHandler) Add(errMsg Error) {
+    if eh.fileErrs == nil {
+        eh.fileErrs = make(map[string][]Error)
+    }
+    fileName := errMsg.File
+    _, ok := eh.fileErrs[fileName]
+    if !ok {
+        eh.fileErrs[fileName] = make([]Error, 0)
+    }
+    eh.fileErrs[fileName] = append(eh.fileErrs[fileName], errMsg)
+    eh.error_count++
 }
 
 func (e ErrHandler) ReportAll() {
-	if e.QueueSize() == 0 {
-		return
-	}
-	fileErrs := map[string][]Error{}
+	for file, errs := range e.fileErrs {
+        cmpr := func(i, j int) bool {
+            return errs[i].OnLine < errs[j].OnLine
+        }
+		sort.Slice(errs, cmpr)
+		source := readFile(file)
 
-	// classify errors by files
-	for _, err := range e.queue {
-		if _, ok := fileErrs[err.File]; !ok {
-			fileErrs[err.File] = make([]Error, 0)
-		}
-		fileErrs[err.File] = append(fileErrs[err.File], err)
-	}
-
-	for file, errs := range fileErrs { // Eeee!! this is little more complicated than i anticipated
-		errMsg := fmt.Sprintf("found %d error(s) in %s\n\n", len(errs), file)
-		os.Stdout.WriteString(errMsg)
-
-		sort.Slice(errs, func(i, j int) bool { return errs[i].OnLine < errs[j].OnLine })
-		program := readFile(file)
-		errBuf := map[string][]Error{} // buffer for grouping errors with same error message on same line
-
-		curLine := errs[0].OnLine // buffering error messages of current line
+        tab := "    "
 		for _, err := range errs {
-			if curLine == err.OnLine {
-				if _, ok := errBuf[err.ErrMsg]; !ok {
-					errBuf[err.ErrMsg] = make([]Error, 0) // creating empty buffer for Error objects
-				}
-				errBuf[err.ErrMsg] = append(errBuf[err.ErrMsg], err)
-			} else {
-				for errMsg := range errBuf {
-					report(program[curLine], errBuf[errMsg])
-				}
-				errBuf = make(map[string][]Error)
-				errBuf[err.ErrMsg] = []Error{err}
-				curLine = err.OnLine
-			}
-		}
-		for errMsg := range errBuf {
-			if curLine < len(program) {
-				report(program[curLine], errBuf[errMsg])
-			}
+            bline := min(err.OnLine, max(0, err.OnLine - error_context_before))
+            aline := min(len(source) - 1, err.OnLine + error_context_after)
+
+            formated_errMsg := fmt.Sprintf("\n%s\n", err.format())
+            os.Stdout.WriteString(formated_errMsg)
+
+            for onLine := bline; onLine <= aline; onLine++ {
+                sline := strings.ReplaceAll(source[onLine], "\t", tab)
+                cxt_line := fmt.Sprintf("%5d | %s\n", onLine + 1, sline)
+                os.Stdout.WriteString(cxt_line)
+                if err.OnLine == onLine {
+                    offset := strings.Repeat(" ", err.OnColumn - 1)
+                    pointer_str := strings.Repeat("^", err.Length)
+                    pointer_line := fmt.Sprintln("      |", offset, color.RedString(pointer_str))
+                    os.Stdout.WriteString(pointer_line)
+                }
+            }
 		}
 	}
 }
 
-// TODO: do better with implementation
-/* why errs is a slice?: there can be mulitple errors
-with same message on a single line */
-func report(line string, errs []Error) {
-	sort.Slice(errs, func(i, j int) bool { return errs[i].OnColumn < errs[j].OnColumn })
-	var errPointer string
-	var errLine string
-	last := 0
-	for _, err := range errs {
-		errLine += line[last:err.OnColumn]
-		errPointer += createString(err.OnColumn-last, ' ')
-
-		last = err.OnColumn + err.Length
-		errLine += color.RedString(line[err.OnColumn:last])
-		errPointer += createString(err.Length, '^')
-	}
-	errLine += line[last:]
-
-	lineNumber := fmt.Sprintf(" %d| ", errs[0].OnLine+1)
-	padding := createString(len(lineNumber)-2, ' ') + "| " // ----|
-	errMsg := padding + "\n"
-	errMsg += lineNumber + errLine + "\n"
-	errMsg += padding + errPointer + "\n"
-	errMsg += padding + errs[0].ErrMsg + "\n\n"
-	os.Stdout.WriteString(errMsg)
+func (eh *ErrHandler) Error_count() int {
+    return eh.error_count
 }
 
-func createString(length int, char rune) string {
-	var str string
-	for i := 0; i < length; i++ {
-		str += string(char)
-	}
-	return str
+func max(a, b int) int {
+    return int(math.Max(float64(a), float64(b)))
+}
+
+func min(a, b int) int {
+    return int(math.Min(float64(a), float64(b)))
 }
 
 func readFile(filePath string) []string {
-	file, err := os.Open(filePath)
+    absPath, err := filepath.Abs(filePath)
+    if err != nil {
+        panic(err)
+    }
+
+	file, err := os.Open(absPath)
 	if err != nil {
-		panic(err) // let's just panic as of now
+		panic(err)
 	}
 
 	scanner := bufio.NewScanner(file)
-	var program []string
+	var source []string
 	for scanner.Scan() {
-		program = append(program, scanner.Text())
+		source = append(source, scanner.Text())
 	}
-	return program
-}
-
-func (e *ErrHandler) QueueSize() int {
-	return len(e.queue)
-}
-
-func (e *ErrHandler) ClearQueue() {
-	e.queue = make([]Error, 0)
+	return source
 }
