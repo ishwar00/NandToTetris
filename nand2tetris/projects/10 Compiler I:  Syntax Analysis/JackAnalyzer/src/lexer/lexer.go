@@ -32,7 +32,7 @@ func LexFile(fileName string) (*Lexer, error) {
 	if err != nil {
 		return &Lexer{}, err
 	}
-    input = append(input, []byte("\n    ")...)
+	input = append(input, []byte("\n    ")...)
 
 	l := &Lexer{
 		input:    string(input),
