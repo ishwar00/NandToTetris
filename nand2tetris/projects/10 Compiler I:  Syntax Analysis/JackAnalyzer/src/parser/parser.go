@@ -172,7 +172,7 @@ func canBeType(tok token.Token) bool {
 }
 
 func (p *Parser) expectedTypeErr(tok token.Token) {
-    errMsg := fmt.Sprintf("%s is not a Type", color.RedString(tok.Literal))
+	errMsg := fmt.Sprintf("%s is not a Type", color.RedString(tok.Literal))
 	p.addError(errMsg, tok)
 }
 
@@ -226,7 +226,7 @@ func (p *Parser) parseStatement(skipTo ...token.TokenType) ast.Statement {
 	case token.RETURN:
 		return p.parseReturnSta(skipTo...)
 	}
-    errMsg := red("compiler bug") + ": parser.parseStatement was called on " + red(p.curToken.Literal)
+	errMsg := red("compiler bug") + ": parser.parseStatement was called on " + red(p.curToken.Literal)
 	p.addError(errMsg, p.curToken)
 	return nil
 }
