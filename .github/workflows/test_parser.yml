@@ -1,0 +1,21 @@
+name: Go package
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Test lexer
+        run: go test -v './nand2tetris/projects/10 Compiler I:Syntax Analysis/JackAnalyzer/src/lexer/'
+
+      - name: Test parser
+        run: go test -v './nand2tetris/projects/10 Compiler I:Syntax Analysis/JackAnalyzer/src/parser/'
