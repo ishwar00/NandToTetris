@@ -15,7 +15,7 @@ jobs:
           go-version: 1.18
 
       - name: Test lexer
-        run: go test -v './nand2tetris/projects/10 Compiler I:Syntax Analysis/JackAnalyzer/src/lexer/'
+        run: cd './nand2tetris/projects/10 Compiler I:Syntax Analysis/JackAnalyzer/src/lexer/'; go test -v
 
       - name: Test parser
-        run: go test -v './nand2tetris/projects/10 Compiler I:Syntax Analysis/JackAnalyzer/src/parser/'
+        run: cd './nand2tetris/projects/10 Compiler I:Syntax Analysis/JackAnalyzer/src/parser/'; go test -v
